@@ -138,6 +138,7 @@ class BiomassTest(SQLModel, table=True):
     biomass_test_id: Optional[int] = Field(default=None, primary_key=True)
     biomass_test_name: str = Field(default=None, index=True)
     biomass_test_notes: Optional[str] = Field(default=None)
+    biomass_test_column: Optional[str] = Field(default=None)
 
 
 

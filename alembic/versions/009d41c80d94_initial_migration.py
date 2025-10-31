@@ -1,8 +1,8 @@
-"""Initial migration
+"""initial migration
 
-Revision ID: acd0f6e073d6
+Revision ID: 009d41c80d94
 Revises:
-Create Date: 2025-10-24 19:13:26.656419
+Create Date: 2025-10-31 17:18:17.118925
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'acd0f6e073d6'
+revision: str = '009d41c80d94'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -146,6 +146,7 @@ def upgrade() -> None:
     sa.Column('biomass_test_id', sa.Integer(), nullable=False),
     sa.Column('biomass_test_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('biomass_test_notes', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('biomass_test_column', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.PrimaryKeyConstraint('biomass_test_id')
     )
     op.create_index(op.f('ix_biomass_test_biomass_test_name'), 'biomass_test', ['biomass_test_name'], unique=False)
@@ -437,6 +438,17 @@ def upgrade() -> None:
     sa.Column('location_resolution_id', sa.Integer(), nullable=True),
     sa.Column('is_anonymous', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('location_id')
+    )
+    op.create_table('geography',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('state_name', sa.Text(), nullable=True),
+    sa.Column('state_fips', sa.Text(), nullable=True),
+    sa.Column('county_name', sa.Text(), nullable=True),
+    sa.Column('county_fips', sa.Text(), nullable=True),
+    sa.Column('geoid', sa.Text(), nullable=True),
+    sa.Column('region_name', sa.Text(), nullable=True),
+    sa.Column('agg_level_desc', sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('harvest_methods',
     sa.Column('harvest_method_id', sa.Integer(), nullable=False),
@@ -764,12 +776,66 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('zip_id'),
     sa.UniqueConstraint('zip_code')
     )
+    op.create_table('census_record',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('year', sa.Integer(), nullable=False),
+    sa.Column('crop', sa.Enum('Almond', 'Pistachio', 'Tomato', 'Olive', name='CropEnum'), nullable=True),
+    sa.Column('variable', sa.Enum('ACREAGE_TOTAL', 'ACREAGE_BEARING', 'ACREAGE_NONBEARING', 'YIELD', 'PRODUCTION', 'OPERATIONS', name='VariableEnum'), nullable=True),
+    sa.Column('unit', sa.Enum('ACRES', 'TONS', 'TONS_PER_ACRE', 'OPERATIONS', name='UnitEnum'), nullable=True),
+    sa.Column('value', sa.Float(), nullable=True),
+    sa.Column('bearing_status', sa.Enum('BEARING', 'NONBEARING', 'NA', name='BearingStatusEnum'), nullable=True),
+    sa.Column('class_desc', sa.Text(), nullable=True),
+    sa.Column('domain_desc', sa.Text(), nullable=True),
+    sa.Column('source', sa.Text(), nullable=True),
+    sa.Column('notes', sa.Text(), nullable=True),
+    sa.Column('geography_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['geography_id'], ['geography.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('survey_record',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('period_desc', sa.Text(), nullable=True),
+    sa.Column('freq_desc', sa.Text(), nullable=True),
+    sa.Column('program_desc', sa.Text(), nullable=True),
+    sa.Column('year', sa.Integer(), nullable=False),
+    sa.Column('crop', sa.Enum('Almond', 'Pistachio', 'Tomato', 'Olive', name='CropEnum'), nullable=True),
+    sa.Column('variable', sa.Enum('ACREAGE_TOTAL', 'ACREAGE_BEARING', 'ACREAGE_NONBEARING', 'YIELD', 'PRODUCTION', 'OPERATIONS', name='VariableEnum'), nullable=True),
+    sa.Column('unit', sa.Enum('ACRES', 'TONS', 'TONS_PER_ACRE', 'OPERATIONS', name='UnitEnum'), nullable=True),
+    sa.Column('value', sa.Float(), nullable=True),
+    sa.Column('bearing_status', sa.Enum('BEARING', 'NONBEARING', 'NA', name='BearingStatusEnum'), nullable=True),
+    sa.Column('class_desc', sa.Text(), nullable=True),
+    sa.Column('domain_desc', sa.Text(), nullable=True),
+    sa.Column('source', sa.Text(), nullable=True),
+    sa.Column('notes', sa.Text(), nullable=True),
+    sa.Column('geography_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['geography_id'], ['geography.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('usda_record',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('year', sa.Integer(), nullable=False),
+    sa.Column('crop', sa.Enum('Almond', 'Pistachio', 'Tomato', 'Olive', name='CropEnum'), nullable=True),
+    sa.Column('variable', sa.Enum('ACREAGE_TOTAL', 'ACREAGE_BEARING', 'ACREAGE_NONBEARING', 'YIELD', 'PRODUCTION', 'OPERATIONS', name='VariableEnum'), nullable=True),
+    sa.Column('unit', sa.Enum('ACRES', 'TONS', 'TONS_PER_ACRE', 'OPERATIONS', name='UnitEnum'), nullable=True),
+    sa.Column('value', sa.Float(), nullable=True),
+    sa.Column('bearing_status', sa.Enum('BEARING', 'NONBEARING', 'NA', name='BearingStatusEnum'), nullable=True),
+    sa.Column('class_desc', sa.Text(), nullable=True),
+    sa.Column('domain_desc', sa.Text(), nullable=True),
+    sa.Column('source', sa.Text(), nullable=True),
+    sa.Column('notes', sa.Text(), nullable=True),
+    sa.Column('geography_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['geography_id'], ['geography.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_table('usda_record')
+    op.drop_table('survey_record')
+    op.drop_table('census_record')
     op.drop_table('zips')
     op.drop_table('xrf_analysis')
     op.drop_table('vectorized_raster_polygons')
@@ -818,6 +884,7 @@ def downgrade() -> None:
     op.drop_table('import_log')
     op.drop_table('icp_analysis')
     op.drop_table('harvest_methods')
+    op.drop_table('geography')
     op.drop_table('geographic_locations')
     op.drop_table('gasification_profile')
     op.drop_table('fips')

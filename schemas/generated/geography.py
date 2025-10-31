@@ -13,7 +13,7 @@ class Geography(Base):
     """
     Reference table for U.S. geographic identifiers.
     """
-    __tablename__ = 'Geography'
+    __tablename__ = 'geography'
 
     id = Column(Integer(), primary_key=True, autoincrement=True , nullable=False )
     state_name = Column(Text())

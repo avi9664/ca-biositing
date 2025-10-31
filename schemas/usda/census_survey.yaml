@@ -16,7 +16,7 @@ imports:
   - ../common/geography
 
 classes:
-  USDARecord:
+  UsdaRecord:
     description: Base class for USDA agricultural data records.
     annotations:
       __tablename__: usda_record
@@ -45,13 +45,13 @@ classes:
         range: BearingStatusEnum
 
   CensusRecord:
-    is_a: USDARecord
+    is_a: UsdaRecord
     description: A USDA Census of Agriculture record (every 5 years).
     annotations:
       __tablename__: census_record
 
   SurveyRecord:
-    is_a: USDARecord
+    is_a: UsdaRecord
     description: A USDA Survey record (annual, seasonal, or periodic).
     annotations:
       __tablename__: survey_record

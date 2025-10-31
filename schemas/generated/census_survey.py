@@ -13,7 +13,7 @@ class USDARecord(Base):
     """
     Base class for USDA agricultural data records.
     """
-    __tablename__ = 'USDARecord'
+    __tablename__ = 'usda_record'
 
     id = Column(Integer(), primary_key=True, autoincrement=True , nullable=False )
     year = Column(Integer(), nullable=False )
@@ -26,8 +26,8 @@ class USDARecord(Base):
     domain_desc = Column(Text())
     source = Column(Text())
     notes = Column(Text())
-    geography_id = Column(Integer(), ForeignKey('Geography.id'))
-    geography = relationship("Geography", uselist=False, foreign_keys=[geography_id])
+    geography_id = Column(Integer(), ForeignKey('geography.id'))
+    geography = relationship("geography", uselist=False, foreign_keys=[geography_id])
 
 
     def __repr__(self):
@@ -42,7 +42,7 @@ class Geography(Base):
     """
     Reference table for U.S. geographic identifiers.
     """
-    __tablename__ = 'Geography'
+    __tablename__ = 'geography'
 
     id = Column(Integer(), primary_key=True, autoincrement=True , nullable=False )
     state_name = Column(Text())
@@ -55,7 +55,7 @@ class Geography(Base):
 
 
     def __repr__(self):
-        return f"Geography(id={self.id},state_name={self.state_name},state_fips={self.state_fips},county_name={self.county_name},county_fips={self.county_fips},geoid={self.geoid},region_name={self.region_name},agg_level_desc={self.agg_level_desc},)"
+        return f"geography(id={self.id},state_name={self.state_name},state_fips={self.state_fips},county_name={self.county_name},county_fips={self.county_fips},geoid={self.geoid},region_name={self.region_name},agg_level_desc={self.agg_level_desc},)"
 
 
 
@@ -66,7 +66,7 @@ class CensusRecord(USDARecord):
     """
     A USDA Census of Agriculture record (every 5 years).
     """
-    __tablename__ = 'CensusRecord'
+    __tablename__ = 'census_record'
 
     id = Column(Integer(), primary_key=True, autoincrement=True , nullable=False )
     year = Column(Integer(), nullable=False )
@@ -79,8 +79,8 @@ class CensusRecord(USDARecord):
     domain_desc = Column(Text())
     source = Column(Text())
     notes = Column(Text())
-    geography_id = Column(Integer(), ForeignKey('Geography.id'))
-    geography = relationship("Geography", uselist=False, foreign_keys=[geography_id])
+    geography_id = Column(Integer(), ForeignKey('geography.id'))
+    geography = relationship("geography", uselist=False, foreign_keys=[geography_id])
 
 
     def __repr__(self):
@@ -100,7 +100,7 @@ class SurveyRecord(USDARecord):
     """
     A USDA Survey record (annual, seasonal, or periodic).
     """
-    __tablename__ = 'SurveyRecord'
+    __tablename__ = 'survey_record'
 
     id = Column(Integer(), primary_key=True, autoincrement=True , nullable=False )
     period_desc = Column(Text())
@@ -116,8 +116,8 @@ class SurveyRecord(USDARecord):
     domain_desc = Column(Text())
     source = Column(Text())
     notes = Column(Text())
-    geography_id = Column(Integer(), ForeignKey('Geography.id'))
-    geography = relationship("Geography", uselist=False, foreign_keys=[geography_id])
+    geography_id = Column(Integer(), ForeignKey('geography.id'))
+    geography = relationship("geography", uselist=False, foreign_keys=[geography_id])
 
 
     def __repr__(self):

@@ -14,39 +14,24 @@ from dotenv import load_dotenv
 load_dotenv()  # Looks for .env in the project root by default
 
 # --- Import your models so Alembic knows about them ---
-from src.pipeline.etl.models.biomass import *
-from src.pipeline.etl.models.data_and_references import *
-from src.pipeline.etl.models.experiments_analysis import *
-from src.pipeline.etl.models.external_datasets import *
-from src.pipeline.etl.models.geographic_locations import *
-from src.pipeline.etl.models.metadata_samples import *
-from src.pipeline.etl.models.organizations import *
-from src.pipeline.etl.models.people_contacts import *
-from src.pipeline.etl.models.sample_preprocessing import *
-from src.pipeline.etl.models.specific_aalysis_results import *
-from src.pipeline.etl.models.user import *
+from src.pipeline.models.biomass import *
+from src.pipeline.models.data_and_references import *
+from src.pipeline.models.experiments_analysis import *
+from src.pipeline.models.external_datasets import *
+from src.pipeline.models.geographic_locations import *
+from src.pipeline.models.metadata_samples import *
+from src.pipeline.models.organizations import *
+from src.pipeline.models.people_contacts import *
+from src.pipeline.models.sample_preprocessing import *
+from src.pipeline.models.specific_aalysis_results import *
+from src.pipeline.models.user import *
 from sqlmodel import SQLModel
 import importlib.util
 from pathlib import Path
 
 # --- Import generated models ---
-# You can explicitly import your generated models here, or uncomment the
-# code below to dynamically import them.
-from schemas.generated.census_survey import *
-from schemas.generated.geography import *
-
-# # --- Dynamically import generated models ---
-# # This code will dynamically import all Python files from the
-# # schemas/generated directory. This is a convenience so that you don't have
-# # to add a new import statement every time you generate a new model from a
-# # LinkML schema.
-# generated_path = Path(__file__).resolve().parents[1] / "schemas" / "generated"
-# for file in os.listdir(generated_path):
-#     if file.endswith(".py") and file != "__init__.py":
-#         module_name = file[:-3]
-#         spec = importlib.util.spec_from_file_location(module_name, generated_path / file)
-#         module = importlib.util.module_from_spec(spec)
-#         spec.loader.exec_module(module)
+from schemas.generated.census_survey import metadata as census_metadata
+from schemas.generated.geography import metadata as geography_metadata
 
 # --- Alembic Config object, provides access to alembic.ini values ---
 config = context.config
@@ -65,8 +50,9 @@ if config.config_file_name is not None:
 # --- Metadata from your models for autogenerate ---
 # Combine metadata from all models
 # See: https://alembic.sqlalchemy.org/en/latest/autogenerate.html#affecting-the-autogenerate-process
-for table in SQLModel.metadata.tables.values():
-    table.tometadata(SQLModel.metadata)
+for m in [census_metadata, geography_metadata]:
+    for table in m.tables.values():
+        table.tometadata(SQLModel.metadata)
 
 target_metadata = SQLModel.metadata
 

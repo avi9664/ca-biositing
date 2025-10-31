@@ -20,6 +20,8 @@ classes:
     description: >
       Represents a specific address or field location. References a parent
       Geography (county-level).
+    annotations:
+      __tablename__: location
     slots:
       - location_id
       - geography # FK to Geography
