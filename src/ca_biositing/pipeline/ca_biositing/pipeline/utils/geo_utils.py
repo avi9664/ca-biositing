@@ -90,8 +90,8 @@ def parse_addresses(df, address_column="address", merge_columns=[], lat="latitud
             zip_suffix = get_component("short_name", "postal_code_suffix", addy_components)
 
             # get latitude and longitude
-            if isinstance(row[lat], (float, int)) and not np.isnan(row[lat]) and \
-               isinstance(row[long], (float, int)) and not np.isnan(row[long]):
+            if lat != None and long != None and not np.isnan(row[lat]) and isinstance(row[lat], (float, int)) and \
+               not np.isnan(row[long]) and isinstance(row[long], (float, int)):
                 latitude = row[lat]
                 longitude = row[long]
             else:

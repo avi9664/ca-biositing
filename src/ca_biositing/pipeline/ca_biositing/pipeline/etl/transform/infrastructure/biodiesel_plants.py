@@ -184,7 +184,7 @@ def transform(
     # TODO: Update this dictionary to match your source-to-target mapping
 
     rename_columns = {
-
+        "address": "address_id"
     }
     normalized_df = normalized_df.rename(columns=rename_columns)
 
@@ -205,7 +205,7 @@ def transform(
             "capacity_mmg_per_y",
             "feedstock",
             "status",
-            "address",
+            "address_id",
             "coordinates",
             "latitude",
             "longitude",
