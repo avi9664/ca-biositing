@@ -28,7 +28,7 @@ AVAILABLE_FLOWS = {
     # Infrastructure pipelines
     "petroleum_pipelines": "ca_biositing.pipeline.flows.petroleum_pipelines.petroleum_pipelines_flow",
     "biosolids_facilities": "ca_biositing.pipeline.flows.biosolids_facilities.biosolids_facilities_flow",
-    "cafo_manure_locations": "ca_biositing.pipeline.flows.cafo_manure_locations.cafo_manure_locations_flow",
+    # "cafo_manure_locations": "ca_biositing.pipeline.flows.cafo_manure_locations.cafo_manure_locations_flow",
     "combustion_plants": "ca_biositing.pipeline.flows.combustion_plants.combustion_plants_flow",
     "district_energy_systems": "ca_biositing.pipeline.flows.district_energy_systems.district_energy_systems_flow",
     "ethanol_biorefineries": "ca_biositing.pipeline.flows.ethanol_biorefineries.ethanol_biorefineries_flow",

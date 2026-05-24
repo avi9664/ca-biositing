@@ -66,25 +66,25 @@ def transform(
 
         coerced_df = coercion_mod.coerce_columns(
             cleaned_df,
-            int_cols=["project_int_id", "landfill_id", "waste_in_place"],
+            int_cols=["landfill_id", "waste_in_place_tons_", "year_landfill_opened",
+                "landfill_closure_year"],
             float_cols=[
-                "lfg_collected",
-                "lfg_flared",
+                "lfg_collected_mmscfd_",
+                "lfg_flared_mmscfd_",
                 "actual_mw_generation",
                 "rated_mw_capacity",
-                "lfg_flow_to_project",
-                "direct_emission_reductions",
-                "avoided_emission_reductions",
+                "lfg_flow_to_project_mmscfd_",
+                "current_year_emission_reductions_mmtco2e_yr_direct",
+                "current_year_emission_reductions_mmtco2e_yr_avoided",
                 "latitude",
                 "longitude",
             ],
             datetime_cols=[
-                "landfill_opened_year",
-                "landfill_closure_year",
                 "waste_in_place_year",
                 "project_start_date",
                 "project_shutdown_date",
             ],
+            bool_cols=["lfg_collection_system_in_place_"]
         )
         processed_dfs.append(coerced_df)
 
@@ -110,7 +110,7 @@ def transform(
 
     # 4b. Column Renaming — map post-clean source names to DB column names
     rename_columns = {
-        "landfill_owner_organization_s": "landfill_owner_orgs",
+        "landfill_owner_organization_s_": "landfill_owner_orgs",
         "year_landfill_opened": "landfill_opened_year",
         "current_landfill_status": "landfill_status",
         "waste_in_place_tons_": "waste_in_place",
