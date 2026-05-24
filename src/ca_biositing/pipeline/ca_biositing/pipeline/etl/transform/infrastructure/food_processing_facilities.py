@@ -62,7 +62,7 @@ def transform(
 
         # 2. Column Renaming — map post-clean source names to DB column names
         rename_columns = {
-            "type": "processing_type",
+            "Type": "processing_type",
             "TYPE": "type",
             "MASTERTYPE": "master_type"
         }
