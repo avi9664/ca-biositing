@@ -1,6 +1,7 @@
+# .gitignore
 # pixi environments
 .pixi
-pixi.lock
+# pixi.lock
 
 # Unit test / coverage reports
 htmlcov/
@@ -77,6 +78,9 @@ draft_additions.py
 
 # Database Backups
 backups/
+
+# Logs
+logs/
 
 # PR Plans
 docs/pr/
