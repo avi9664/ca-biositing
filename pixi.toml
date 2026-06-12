@@ -27,6 +27,7 @@ deployment = { features = ["cloud"], solve-group = "default" }
 
 [dependencies]
 python = "~=3.12"
+nodejs = ">=18"
 pre-commit = ">=4.2.0,<5"
 pytest = ">=8.4.2,<9"
 pytest-cov = ">=7.0.0,<8"
@@ -55,6 +56,7 @@ geoalchemy2 = ">=0.19.0,<0.20"
 jinja2 = ">=3.1.5,<4"
 
 [tasks]
+skills-sync = "python skills.py"
 pre-commit-all = "pre-commit run --all-files"
 pre-commit-install = "pre-commit install"
 initial-migration = { cmd = [
@@ -138,6 +140,10 @@ run-etl = { cmd = [
 ], description = "Trigger the master ETL flow deployment.", depends-on = [
     "start-services",
 ] }
+run-single-flow = { cmd = "python scripts/run_flow.py run", description = "Trigger a specific ETL flow by module name. Usage: pixi run run-single-flow landiq_etl", depends-on = [
+    "start-services",
+] }
+list-flows = { cmd = "python scripts/run_flow.py list", description = "List all available ETL flows in the project." }
 check-db-health = { cmd = [
     "docker-compose",
     "-f",
