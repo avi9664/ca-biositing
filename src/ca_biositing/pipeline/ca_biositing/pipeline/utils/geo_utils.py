@@ -11,12 +11,15 @@ af = addfips.AddFIPS()
 
 address_types = ['street_number', 'route', "intersection", "natural_feature", "airport", "park", "point_of_interest", 'post_box', 'landmark']
 
-def get_geocoder():
+def get_geocoder(api_key=None):
     """
     Lazily initialize the GoogleV3 geocoder and rate limiter.
     This avoids ConfigurationErrors at import time if the API key is missing.
     """
-    api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+    # if there's no hard-coded API key, find it in the .env
+    if not api_key:
+        api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+    # if os still can't find an api_key, return None
     if not api_key:
         # During CI test collection, we want to allow import but fail only when used
         # However, to satisfy geopy's requirement without breaking collection:
@@ -43,7 +46,7 @@ def get_component(name_length, comp_type, addy_components):
     return next((name[name_length] for name in addy_components if comp_type in name["types"]), None)
 
 # main function; need to define names of columns where address and latlong are stored
-def parse_addresses(df, address_column="address", merge_columns=[], lat="latitude", long="longitude"):
+def parse_addresses(df, address_column="address", merge_columns=[], lat="latitude", long="longitude", api_key=None):
     try:
         logger = get_run_logger()
     except Exception:
@@ -58,7 +61,7 @@ def parse_addresses(df, address_column="address", merge_columns=[], lat="latitud
         df['is_na'] = df[address_column].isnull()
 
     # Lazily initialize geocoder inside the function
-    geocode = get_geocoder()
+    geocode = get_geocoder(api_key)
 
     address_df = pd.DataFrame(columns=["closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude"])
     geoid_df = pd.DataFrame(columns=["closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips"])
@@ -113,8 +116,8 @@ def parse_addresses(df, address_column="address", merge_columns=[], lat="latitud
             # handle weird addresses
             unparsable = unparsable + [str(index) + "\t" + str(row[address_column])]
 
-            if isinstance(row[lat], (float, int)) and not np.isnan(row[lat]) and \
-               isinstance(row[long], (float, int)) and not np.isnan(row[long]):
+            if lat != None and long != None and not np.isnan(row[lat]) and isinstance(row[lat], (float, int)) and \
+               not np.isnan(row[long]) and isinstance(row[long], (float, int)):
                 latitude = row[lat]
                 longitude = row[long]
             else:

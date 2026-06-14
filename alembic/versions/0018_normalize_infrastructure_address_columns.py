@@ -1,7 +1,7 @@
 """normalize infrastructure address columns
 
-Revision ID: 0016
-Revises: 0015
+Revision ID: 0018
+Revises: 0017
 Create Date: 2026-05-20 23:52:51.451001
 
 """
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0016'
-down_revision: Union[str, Sequence[str], None] = '0015'
+revision: str = '0018'
+down_revision: Union[str, Sequence[str], None] = '0017'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
