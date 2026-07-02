@@ -2,7 +2,9 @@
 USDA Census and Survey Data Extraction.
 
 This module extracts agricultural census and survey data from the USDA NASS
-Quick Stats API for California.
+Quick Stats API for all 58 California counties.
+The county list is driven by `data/static/ca_counties.csv`.
+
 Data includes:
 - Census data (every 5 years): Complete agricultural census
 - Survey data (annual): Preliminary and final agricultural estimates
@@ -13,6 +15,7 @@ For more information: https://quickstats.nass.usda.gov/api
 
 from typing import Optional
 import os
+from pathlib import Path
 import pandas as pd
 from prefect import task, get_run_logger
 
@@ -21,10 +24,16 @@ try:
     # Try absolute import first (works in Docker)
     from ca_biositing.pipeline.utils.usda_nass_to_pandas import usda_nass_to_df
     from ca_biositing.pipeline.utils.fetch_mapped_commodities import get_mapped_commodity_ids
+    from ca_biositing.pipeline.utils.usda_discovery import discover_top_commodities
+    from ca_biositing.pipeline.utils.seed_commodity_mappings import ensure_commodities_exist
+    from ca_biositing.pipeline.utils.engine import get_engine
 except ImportError:
     # Fallback for local testing
     from src.ca_biositing.pipeline.ca_biositing.pipeline.utils.usda_nass_to_pandas import usda_nass_to_df
     from src.ca_biositing.pipeline.ca_biositing.pipeline.utils.fetch_mapped_commodities import get_mapped_commodity_ids
+    from src.ca_biositing.pipeline.ca_biositing.pipeline.utils.usda_discovery import discover_top_commodities
+    from src.ca_biositing.pipeline.ca_biositing.pipeline.utils.seed_commodity_mappings import ensure_commodities_exist
+    from src.ca_biositing.pipeline.ca_biositing.pipeline.utils.engine import get_engine
 
 # --- CONFIGURATION ---
 # USDA API Key - loaded from environment variable
@@ -44,28 +53,61 @@ YEAR = None
 # Leave as None to get all commodities
 COMMODITY = None
 
-# North San Joaquin Valley priority counties (3-digit NASS county codes)
-# These match the counties used in the notebook
-PRIORITY_COUNTIES = {
-    "077",  # San Joaquin
-    "099",  # Stanislaus
-    "047",  # Merced
-}
+def _load_ca_counties() -> list:
+    """
+    Load all California counties from the static CSV file.
+    Returns a sorted list of (county_fips, county_name) tuples.
+    County FIPS codes are 3-digit zero-padded strings matching the USDA API county_code param.
+    """
+    # Try cwd-relative first (works in Docker where WORKDIR=/app)
+    cwd_path = Path.cwd() / "data" / "static" / "ca_counties.csv"
+    # Fallback: relative to this file (works in local dev)
+    # The file is at src/ca_biositing/pipeline/ca_biositing/pipeline/etl/extract/usda_census_survey.py
+    # So parents are: 0:extract, 1:etl, 2:pipeline, 3:ca_biositing, 4:pipeline, 5:ca_biositing, 6:src, 7:root
+    try:
+        file_path = Path(__file__).resolve().parents[7] / "data" / "static" / "ca_counties.csv"
+    except IndexError:
+        # If path is shorter than expected, just use cwd as last resort
+        file_path = cwd_path
+
+    csv_path = cwd_path if cwd_path.exists() else file_path
+    if not csv_path.exists():
+        raise FileNotFoundError(
+            f"ca_counties.csv not found. Tried:\n  {cwd_path}\n  {file_path}"
+        )
+
+    df = pd.read_csv(csv_path, dtype=str)
+    counties = sorted(zip(df["county_fips"], df["county_name"]))
+    return counties
 
 
 @task
 def extract() -> Optional[pd.DataFrame]:
     """
     Extracts USDA data ONLY for commodities mapped in resource_usda_commodity_map
-    and for priority counties (North San Joaquin Valley).
+    for all California counties.
     This allows adding new crops by updating the database, no code changes needed.
     """
     logger = get_run_logger()
     logger.info("🔵 [USDA Extract] Starting...")
 
-    # Get commodity names from database
-    commodity_ids = get_mapped_commodity_ids()
-    logger.info(f"🔵 [USDA Extract] Got {len(commodity_ids) if commodity_ids else 0} commodities: {commodity_ids}")
+    # 1. Discover top commodities dynamically
+    logger.info("🔵 [USDA Extract] Discovering top commodities...")
+    top_commodities = discover_top_commodities(api_key=USDA_API_KEY, state=STATE, year=YEAR, top_n=5)
+
+    # 2. Ensure discovered commodities exist in the database
+    if top_commodities:
+        logger.info(f"🔵 [USDA Extract] Ensuring {len(top_commodities)} discovered commodities exist in DB...")
+        engine = get_engine()
+        ensure_commodities_exist(engine, top_commodities)
+
+    # 3. Get user-defined commodity names from database
+    mapped_commodity_ids = get_mapped_commodity_ids()
+
+    # 4. Combine lists
+    commodity_ids = list(set((mapped_commodity_ids or []) + top_commodities))
+
+    logger.info(f"🔵 [USDA Extract] Got {len(commodity_ids) if commodity_ids else 0} total commodities to extract: {commodity_ids}")
 
     if not commodity_ids:
         logger.error(
@@ -76,36 +118,38 @@ def extract() -> Optional[pd.DataFrame]:
         )
         return None
 
-    logger.info(f"Extracting USDA data for {len(commodity_ids)} commodities in {len(PRIORITY_COUNTIES)} priority counties...")
+    ca_counties = _load_ca_counties()
+    logger.info(f"Loaded {len(ca_counties)} CA counties from ca_counties.csv")
+    logger.info(f"Extracting USDA data for {len(commodity_ids)} commodities for all counties in a single query per commodity...")
+    logger.info("Note: Optimized to 1 query per commodity instead of 1 per county/commodity")
 
-    # Collect data for all priority counties
-    all_dfs = []
+    # Call utility with commodity names, without county_code to get all counties at once
+    # This is much faster and stays well within rate limits
+    raw_df = usda_nass_to_df(
+        api_key=USDA_API_KEY,
+        state=STATE,
+        year=YEAR,
+        commodity_ids=commodity_ids,  # Database-driven commodity names
+        county_code=None  # Get all counties at once
+    )
 
-    for county_code in sorted(PRIORITY_COUNTIES):
-        logger.info(f"  Querying county {county_code}...")
-
-        # Call utility with commodity names and county filter
-        county_df = usda_nass_to_df(
-            api_key=USDA_API_KEY,
-            state=STATE,
-            year=YEAR,
-            commodity_ids=commodity_ids,  # Database-driven commodity names
-            county_code=county_code  # Limit to this county
-        )
-
-        if county_df is not None and not county_df.empty:
-            all_dfs.append(county_df)
-            logger.info(f"    Got {len(county_df)} records from county {county_code}")
-        else:
-            logger.warning(f"    No data for county {county_code}")
-
-    if not all_dfs:
-        logger.error("No data retrieved from any county. Aborting.")
+    if raw_df is None or raw_df.empty:
+        logger.error("No data retrieved from USDA NASS API. Aborting.")
         return None
 
-    # Combine all counties
-    raw_df = pd.concat(all_dfs, ignore_index=True)
-    logger.info(f"Successfully extracted {len(raw_df)} total records from USDA NASS API across {len(all_dfs)} counties.")
+    # Filter for the 58 California counties we care about (in case API returns others)
+    # The API 'county_code' is 3-digits.
+    valid_county_fips = {fips for fips, name in ca_counties}
+    initial_count = len(raw_df)
+    raw_df = raw_df[raw_df["county_code"].isin(valid_county_fips)]
+    filtered_count = len(raw_df)
+
+    logger.info(f"Filtered {initial_count} records down to {filtered_count} records for valid CA counties")
+
+    # Calculate how many counties actually returned data
+    counties_with_data = raw_df["county_code"].nunique()
+
+    logger.info(f"Successfully extracted {len(raw_df)} total records from USDA NASS API across {counties_with_data} of {len(ca_counties)} counties.")
 
     # 🔍 DIAGNOSTIC: Save raw extracted data for inspection (OPTIONAL - uncomment to enable)
     # Uncomment the following block to generate debug CSV files for troubleshooting
