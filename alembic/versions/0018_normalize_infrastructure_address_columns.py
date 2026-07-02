@@ -353,4 +353,3 @@ def downgrade() -> None:
                   sa.Column('state', sa.VARCHAR(), nullable=True))
     op.add_column('infrastructure_wastewater_treatment_plants',
                   sa.Column('zipcode', sa.VARCHAR(), nullable=True))
-
