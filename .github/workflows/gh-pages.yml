@@ -7,8 +7,10 @@ on:
       - "resources/assets/resource_info.csv"
       - "resources/assets/resource_info_header_mapping.json"
       - "resources/assets/index.html"
+      - "exports/plots/**"
       - "scripts/validate_headers.py"
       - "scripts/csv_to_json.py"
+      - "scripts/generate_dashboard_gallery.py"
       - ".github/workflows/gh-pages.yml"
   push:
     branches:
@@ -29,7 +31,7 @@ jobs:
     name: Validate resource info assets
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Validate header mapping is in sync with CSV
         run: python scripts/validate_headers.py
@@ -43,7 +45,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Convert CSV to JSON
         run: python scripts/csv_to_json.py
@@ -54,6 +56,9 @@ jobs:
           cp resources/assets/resource_info.json _site/
           cp resources/assets/resource_info_header_mapping.json _site/
           cp resources/assets/index.html _site/
+          # Deploy dashboard gallery to /gallery subdirectory
+          mkdir -p _site/gallery
+          cp -r exports/plots/* _site/gallery/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
