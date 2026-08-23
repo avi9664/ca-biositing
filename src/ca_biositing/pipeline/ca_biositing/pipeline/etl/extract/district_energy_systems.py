@@ -1,8 +1,10 @@
 from typing import Optional
 import pandas as pd
 from prefect import task, get_run_logger
+from ca_biositing.pipeline.etl.extract.factory import create_extractor
 from ca_biositing.pipeline.utils.gdrive_to_pandas import gdrive_to_df
 import os
+import gspread
 
 @task
 def extract(project_root: Optional[str] = None) -> Optional[pd.DataFrame]:
@@ -36,4 +38,11 @@ def extract(project_root: Optional[str] = None) -> Optional[pd.DataFrame]:
         return None
 
     logger.info("Successfully extracted raw data.")
-    return raw_df
+
+    GSHEET_NAME = "address-to-geocoded"
+    WORKSHEET_NAME = "District Energy Systems"
+    logger.info(f"Creating extractor for Google Sheet '{GSHEET_NAME}' (worksheet '{WORKSHEET_NAME}')...")
+
+    geocoded_extractor = create_extractor(GSHEET_NAME, WORKSHEET_NAME)
+
+    return raw_df, geocoded_extractor

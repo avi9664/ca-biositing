@@ -115,7 +115,7 @@ def transform(
 
             for index, row in normalized_df.iterrows():
                 geoid = row.get("closest_geoid")
-                if geoid is not None:
+                if geoid is not pd.NA and geoid is not None and geoid != "" and geoid != "00000":
                     stmt1 = select(Place).where(Place.geoid == geoid)
                     place = session.exec(stmt1).first()
 

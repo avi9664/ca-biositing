@@ -132,15 +132,19 @@ def transform(
                         session.flush()
 
                     if not address:
+                        # Convert pandas NA to None for database insertion
+                        def to_none_if_na(value):
+                            return None if pd.isna(value) else value
+
                         address = LocationAddress(
                             geography_id=geoid,
-                            address_line1=row.get("closest_address_line_1"),
-                            address_line2=row.get("closest_address_line_2"),
-                            city=row.get("closest_city"),
-                            zip=row.get("closest_postal_code"),
-                            lat=row.get("closest_latitude"),
-                            lon=row.get("closest_longitude"),
-                            is_anonymous=False,
+                            address_line1=to_none_if_na(row["closest_address_line_1"]),
+                            address_line2=to_none_if_na(row["closest_address_line_2"]),
+                            city=to_none_if_na(row["closest_city"]),
+                            zip=to_none_if_na(row["closest_postal_code"]),
+                            lat=to_none_if_na(row["closest_latitude"]),
+                            lon=to_none_if_na(row["closest_longitude"]),
+                            is_anonymous=False
                         )
                         session.add(address)
                         session.flush()

@@ -18,10 +18,15 @@ from ca_biositing.pipeline.utils.geo_utils import parse_addresses
 
 EXTRACT_SOURCES: List[str] = ["saf_and_renewable_diesel_plants"]
 
+MERGE_COLUMNS = ["company", "address", "state", "city"]
+
+# don't edit
+geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips","address_id"]
 
 @task
 def transform(
     data_sources: Dict[str, pd.DataFrame],
+    geocoded_df: pd.DataFrame,
     etl_run_id: int = None,
     lineage_group_id: int = None,
 ) -> Optional[pd.DataFrame]:
@@ -78,15 +83,12 @@ def transform(
 
     combined_df = pd.concat(processed_dfs, ignore_index=True)
 
-    # 3. Geocode addresses — address, city, state, country are available
-    address_df, geoid_df = parse_addresses(
-        combined_df,
-        merge_columns=["address", "city", "state", "country"],
-        lat="latitude",
-        long="longitude",
-    )
+    # 3. Merge geocoded information with incoming data
 
-    added_address_df = pd.concat([combined_df, address_df, geoid_df], axis=1)
+    geocoded_df = cleaning_mod.standard_clean(geocoded_df)
+    GEOCODED_DF_FILTER = MERGE_COLUMNS + geocoded_columns
+
+    added_address_df = pd.merge(combined_df, geocoded_df[GEOCODED_DF_FILTER], on=MERGE_COLUMNS, how='left')
 
     # 4. Normalization
     normalize_columns = {}
@@ -111,7 +113,7 @@ def transform(
 
             for index, row in normalized_df.iterrows():
                 geoid = row.get("closest_geoid")
-                if geoid is not None:
+                if geoid is not pd.NA and geoid is not None and geoid != "" and geoid != "00000":
                     stmt1 = select(Place).where(Place.geoid == geoid)
                     place = session.exec(stmt1).first()
 
@@ -132,15 +134,19 @@ def transform(
                         session.flush()
 
                     if not address:
+                        # Convert pandas NA to None for database insertion
+                        def to_none_if_na(value):
+                            return None if pd.isna(value) else value
+
                         address = LocationAddress(
                             geography_id=geoid,
-                            address_line1=row.get("closest_address_line_1"),
-                            address_line2=row.get("closest_address_line_2"),
-                            city=row.get("closest_city"),
-                            zip=row.get("closest_postal_code"),
-                            lat=row.get("closest_latitude"),
-                            lon=row.get("closest_longitude"),
-                            is_anonymous=False,
+                            address_line1=to_none_if_na(row["closest_address_line_1"]),
+                            address_line2=to_none_if_na(row["closest_address_line_2"]),
+                            city=to_none_if_na(row["closest_city"]),
+                            zip=to_none_if_na(row["closest_postal_code"]),
+                            lat=to_none_if_na(row["closest_latitude"]),
+                            lon=to_none_if_na(row["closest_longitude"]),
+                            is_anonymous=False
                         )
                         session.add(address)
                         session.flush()
