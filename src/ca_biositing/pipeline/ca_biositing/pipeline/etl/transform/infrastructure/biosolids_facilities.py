@@ -1,10 +1,4 @@
-"""
-ETL Transform: Biosolids Facilities.
-
-Transforms raw CSV data from the Biosolids Facilities dataset into a structured
-format matching InfrastructureBiosolidsFacilities. Address columns are merged
-and geocoded via parse_addresses to populate LocationAddress and Place.
-"""
+#Modified ETL Transform for Biosolids Facilities.
 
 import pandas as pd
 import numpy as np
@@ -17,10 +11,17 @@ from ca_biositing.pipeline.utils.geo_utils import parse_addresses
 
 EXTRACT_SOURCES: List[str] = ["biosolids_facilities"]
 
+# List the unique address information needed to find the geocoded address.
+MERGE_COLUMNS = ["facility", "facility_address", "facility_city", "state", "facility_zip", "facility_county"]
+
+# don't edit
+geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips","address_id"]
+
 
 @task
 def transform(
     data_sources: Dict[str, pd.DataFrame],
+    geocoded_df: pd.DataFrame,
     etl_run_id: int = None,
     lineage_group_id: int = None,
 ) -> Optional[pd.DataFrame]:
@@ -93,7 +94,6 @@ def transform(
     combined_df = pd.concat(processed_dfs, ignore_index=True)
 
     rename_columns = {
-        "address": "address_id",
         "rpt_submitted_date+a3a1_a2a1": "report_submitted_date",
         "lat": "latitude",
         "long": "longitude",
@@ -120,17 +120,13 @@ def transform(
     }
     renamed_df = combined_df.rename(columns=rename_columns)
 
+    # 3. Merge geocoded information with incoming data
 
-    # 3. Geocode addresses — multiple address columns, so merge them
-    # facility_address, facility_city, state, facility_zip are spread across columns
-    address_df, geoid_df = parse_addresses(
-        renamed_df,
-        merge_columns=["facility_address", "facility_city", "state", "facility_zip"],
-        lat="latitude",
-        long="longitude",
-    )
+    geocoded_df = cleaning_mod.standard_clean(geocoded_df)
 
-    added_address_df = pd.concat([renamed_df, address_df, geoid_df], axis=1)
+    GEOCODED_DF_FILTER = MERGE_COLUMNS + geocoded_columns
+
+    added_address_df = pd.merge(renamed_df, geocoded_df[GEOCODED_DF_FILTER], on=MERGE_COLUMNS, how='left')
 
     # 4. Normalization
     normalize_columns = {}
@@ -148,7 +144,7 @@ def transform(
 
             for index, row in normalized_df.iterrows():
                 geoid = row.get("closest_geoid")
-                if geoid is not None:
+                if geoid is not pd.NA and geoid is not None and geoid != "" and geoid != "00000":
                     stmt1 = select(Place).where(Place.geoid == geoid)
                     place = session.exec(stmt1).first()
 
@@ -169,14 +165,18 @@ def transform(
                         session.flush()
 
                     if not address:
+                        # Convert pandas NA to None for database insertion
+                        def to_none_if_na(value):
+                            return None if pd.isna(value) else value
+
                         address = LocationAddress(
                             geography_id=geoid,
-                            address_line1=row.get("closest_address_line_1"),
-                            address_line2=row.get("closest_address_line_2"),
-                            city=row.get("closest_city"),
-                            zip=row.get("closest_postal_code"),
-                            lat=row.get("closest_latitude"),
-                            lon=row.get("closest_longitude"),
+                            address_line1=to_none_if_na(row.get("closest_address_line_1")),
+                            address_line2=to_none_if_na(row.get("closest_address_line_2")),
+                            city=to_none_if_na(row.get("closest_city")),
+                            zip=to_none_if_na(row.get("closest_postal_code")),
+                            lat=to_none_if_na(row.get("closest_latitude")),
+                            lon=to_none_if_na(row.get("closest_longitude")),
                             is_anonymous=False,
                         )
                         session.add(address)

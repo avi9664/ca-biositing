@@ -22,9 +22,13 @@ def combustion_plants_flow():
     logger.info(f"✓ etl_run_id={etl_run_id}, lineage_group_id={lineage_group_id}")
 
     logger.info("\n[Step 1] Extracting Combustion Plants data...")
-    raw_data = extract()
+    raw_data, geocoded_extractor = extract()
     if raw_data is None or raw_data.empty:
-        logger.error("✗ Extract failed")
+        logger.error("✗ Extracting raw data failed")
+        return False
+    geocoded_data = geocoded_extractor()
+    if geocoded_data is None or geocoded_data.empty:
+        logger.error("✗ Extracting geocoded data failed")
         return False
     logger.info(f"✓ Extracted {len(raw_data)} records")
 
@@ -33,6 +37,7 @@ def combustion_plants_flow():
         data_sources={"combustion_plants": raw_data},
         etl_run_id=etl_run_id,
         lineage_group_id=lineage_group_id,
+        geocoded_df=geocoded_data
     )
     if cleaned_data is None or cleaned_data.empty:
         logger.error("✗ Transform failed")

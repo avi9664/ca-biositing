@@ -2,7 +2,9 @@ from typing import Optional
 import pandas as pd
 from prefect import task, get_run_logger
 from ca_biositing.pipeline.utils.gdrive_to_pandas import gdrive_to_df
+from ca_biositing.pipeline.etl.extract.factory import create_extractor
 import os
+import gspread
 
 @task
 def extract(project_root: Optional[str] = None) -> Optional[pd.DataFrame]:
@@ -34,11 +36,16 @@ def extract(project_root: Optional[str] = None) -> Optional[pd.DataFrame]:
     # The gdrive_to_df function handles authentication, data fetching, and error handling.
     raw_df = gdrive_to_df(FILE_NAME, MIME_TYPE, credentials_path, dataset_folder)
 
-
-
     if raw_df is None:
         logger.error("Failed to extract data. Aborting.")
         return None
 
     logger.info("Successfully extracted raw data.")
-    return raw_df
+
+    GSHEET_NAME = "address-to-geocoded"
+    WORKSHEET_NAME = "Biodiesel Plants"
+    logger.info(f"Creating extractor for Google Sheet '{GSHEET_NAME}' (worksheet '{WORKSHEET_NAME}')...")
+
+    geocoded_extractor = create_extractor(GSHEET_NAME, WORKSHEET_NAME)
+
+    return raw_df, geocoded_extractor
