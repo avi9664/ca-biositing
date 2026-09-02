@@ -26,6 +26,8 @@ AVAILABLE_FLOWS = {
     #"prepared_sample": "ca_biositing.pipeline.flows.prepared_sample_etl.prepared_sample_etl_flow",
     "thermochem": "ca_biositing.pipeline.flows.thermochem_etl.thermochem_etl_flow",
     # Infrastructure pipelines
+    "crude_oil_pipelines": "ca_biositing.pipeline.flows.crude_oil_pipelines.crude_oil_pipelines_flow",
+    "railways": "ca_biositing.pipeline.flows.railways.railways_flow",
     "petroleum_pipelines": "ca_biositing.pipeline.flows.petroleum_pipelines.petroleum_pipelines_flow",
     "biosolids_facilities": "ca_biositing.pipeline.flows.biosolids_facilities.biosolids_facilities_flow",
     # "cafo_manure_locations": "ca_biositing.pipeline.flows.cafo_manure_locations.cafo_manure_locations_flow",

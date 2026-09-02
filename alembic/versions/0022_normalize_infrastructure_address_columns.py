@@ -9,6 +9,8 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+import sqlmodel
+import geoalchemy2
 
 
 # revision identifiers, used by Alembic.
@@ -185,6 +187,53 @@ def upgrade() -> None:
     op.add_column('infrastructure_wastewater_treatment_plants',
                   sa.Column('updated_at', sa.DateTime(), nullable=True))
 
+    # -- infrastructure_crude_oil_pipelines --
+    op.create_table('infrastructure_crude_oil_pipelines',
+        sa.Column('object_id', sa.Integer(), nullable=False),
+        sa.Column('operator_name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('pipeline_name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('source', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('pipeline_type', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('notes', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('artificial', sa.Integer(), nullable=True),
+        sa.Column('master_oid', sa.Numeric(), nullable=True),
+        sa.Column('commodity', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('volume', sa.Numeric(), nullable=True),
+        sa.Column('capacity', sa.Numeric(), nullable=True),
+        sa.Column('vcr', sa.Numeric(), nullable=True),
+        sa.Column('shape_length', sa.Numeric(), nullable=True),
+        sa.Column('mode_type', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('length', sa.Numeric(), nullable=True),
+        sa.Column('geom', geoalchemy2.types.Geometry("MULTILINESTRING"), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.Column('etl_run_id', sa.Integer(), nullable=True),
+        sa.Column('lineage_group_id', sa.Integer(), nullable=True),
+        sa.PrimaryKeyConstraint('object_id'),
+    )
+
+    # -- infrastructure_railways --
+    op.create_table('infrastructure_railways',
+        sa.Column('object_id', sa.Integer(), nullable=False),
+        sa.Column('state', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('link_type', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('dir_flag', sa.Numeric(), nullable=True),
+        sa.Column('volume', sa.Numeric(), nullable=True),
+        sa.Column('capacity', sa.Numeric(), nullable=True),
+        sa.Column('vcr', sa.Numeric(), nullable=True),
+        sa.Column('artificial', sa.Integer(), nullable=True),
+        sa.Column('shape_length', sa.Numeric(), nullable=True),
+        sa.Column('mode_type', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('length', sa.Numeric(), nullable=True),
+        sa.Column('geom', geoalchemy2.types.Geometry("MULTILINESTRING"), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.Column('etl_run_id', sa.Integer(), nullable=True),
+        sa.Column('lineage_group_id', sa.Integer(), nullable=True),
+        sa.PrimaryKeyConstraint('object_id'),
+    )
+
 
 
 def downgrade() -> None:
@@ -353,3 +402,5 @@ def downgrade() -> None:
                   sa.Column('state', sa.VARCHAR(), nullable=True))
     op.add_column('infrastructure_wastewater_treatment_plants',
                   sa.Column('zipcode', sa.VARCHAR(), nullable=True))
+    op.drop_table('infrastructure_crude_oil_pipelines')
+    op.drop_table('infrastructure_railways')
