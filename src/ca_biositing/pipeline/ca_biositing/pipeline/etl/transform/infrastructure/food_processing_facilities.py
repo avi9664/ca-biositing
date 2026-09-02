@@ -17,10 +17,16 @@ from ca_biositing.pipeline.utils.geo_utils import parse_addresses
 
 EXTRACT_SOURCES: List[str] = ["food_processing_facilities"]
 
+# List the unique address information needed to find the geocoded address.
+MERGE_COLUMNS = ["company", "county", "city", "state", "zip", "address"]
+
+# don't edit
+geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips"]
 
 @task
 def transform(
     data_sources: Dict[str, pd.DataFrame],
+    geocoded_df: pd.DataFrame,
     etl_run_id: int = None,
     lineage_group_id: int = None,
 ) -> Optional[pd.DataFrame]:
@@ -85,15 +91,22 @@ def transform(
 
     combined_df = pd.concat(processed_dfs, ignore_index=True)
 
-    # 3. Geocode addresses — address, city, state, zip are available
-    address_df, geoid_df = parse_addresses(
-        combined_df,
-        merge_columns=["address", "city", "state", "zip"],
-        lat="latitude",
-        long="longitude",
-    )
+    # 3. Merge geocoded information with incoming data
 
-    added_address_df = pd.concat([combined_df, address_df, geoid_df], axis=1)
+    # Ensure consistent data types for merge columns to avoid type mismatch errors
+    # Convert zip to string in both dataframes
+    if 'zip' in combined_df.columns:
+        combined_df['zip'] = combined_df['zip'].astype(str).str.strip()
+        combined_df['zip'] = combined_df['zip'].replace(['nan', 'None', ''], pd.NA)
+
+    geocoded_df = cleaning_mod.standard_clean(geocoded_df)
+    if 'zip' in geocoded_df.columns:
+        geocoded_df['zip'] = geocoded_df['zip'].astype(str).str.strip()
+        geocoded_df['zip'] = geocoded_df['zip'].replace(['nan', 'None', ''], pd.NA)
+
+    GEOCODED_DF_FILTER = MERGE_COLUMNS + geocoded_columns
+
+    added_address_df = pd.merge(combined_df, geocoded_df[GEOCODED_DF_FILTER], on=MERGE_COLUMNS, how='left')
 
     # 4. Normalization
     normalize_columns = {}
@@ -109,47 +122,62 @@ def transform(
         with Session(engine) as session:
             place_to_address_map = {}
 
+            # Helper function to convert pandas NA/NaN to None for database insertion
+            def to_none_if_na(value):
+                """Convert pandas NA, NaN, None, or empty string to None."""
+                if value is None:
+                    return None
+                if pd.isna(value):
+                    return None
+                if isinstance(value, str) and value.strip() == "":
+                    return None
+                return value
+
             for index, row in normalized_df.iterrows():
                 geoid = row.get("closest_geoid")
-                if geoid is not None:
-                    stmt1 = select(Place).where(Place.geoid == geoid)
-                    place = session.exec(stmt1).first()
+                # Properly handle all types of NA/NaN values
+                if pd.isna(geoid) or geoid is None or geoid == "" or geoid == "00000":
+                    continue
 
-                    stmt2 = select(LocationAddress).where(
-                        LocationAddress.geography_id == geoid
+                # Convert to string to ensure proper comparison
+                geoid = str(geoid).strip()
+                if not geoid or geoid == "00000":
+                    continue
+
+                stmt1 = select(Place).where(Place.geoid == geoid)
+                place = session.exec(stmt1).first()
+
+                stmt2 = select(LocationAddress).where(
+                    LocationAddress.geography_id == geoid
+                )
+                address = session.exec(stmt2).first()
+
+                if not place:
+                    place = Place(
+                        geoid=geoid,
+                        state_name=to_none_if_na(row.get("closest_state_name")),
+                        state_fips=to_none_if_na(row.get("closest_state_fips")),
+                        county_name=to_none_if_na(row.get("closest_county_name")),
+                        county_fips=to_none_if_na(row.get("closest_county_fips")),
                     )
-                    address = session.exec(stmt2).first()
+                    session.add(place)
+                    session.flush()
 
-                    if not place:
-                        place = Place(
-                            geoid=geoid,
-                            state_name=row.get("closest_state_name"),
-                            state_fips=row.get("closest_state_fips"),
-                            county_name=row.get("closest_county_name"),
-                            county_fips=row.get("closest_county_fips"),
-                        )
-                        session.add(place)
-                        session.flush()
+                if not address:
+                    address = LocationAddress(
+                        geography_id=geoid,
+                        address_line1=to_none_if_na(row.get("closest_address_line_1")),
+                        address_line2=to_none_if_na(row.get("closest_address_line_2")),
+                        city=to_none_if_na(row.get("closest_city")),
+                        zip=to_none_if_na(row.get("closest_postal_code")),
+                        lat=to_none_if_na(row.get("closest_latitude")),
+                        lon=to_none_if_na(row.get("closest_longitude")),
+                        is_anonymous=False
+                    )
+                    session.add(address)
+                    session.flush()
 
-                    if not address:
-                        # Convert pandas NA to None for database insertion
-                        def to_none_if_na(value):
-                            return None if pd.isna(value) else value
-
-                        address = LocationAddress(
-                            geography_id=geoid,
-                            address_line1=to_none_if_na(row["closest_address_line_1"]),
-                            address_line2=to_none_if_na(row["closest_address_line_2"]),
-                            city=to_none_if_na(row["closest_city"]),
-                            zip=to_none_if_na(row["closest_postal_code"]),
-                            lat=to_none_if_na(row["closest_latitude"]),
-                            lon=to_none_if_na(row["closest_longitude"]),
-                            is_anonymous=False
-                        )
-                        session.add(address)
-                        session.flush()
-
-                    place_to_address_map[geoid] = address.id
+                place_to_address_map[geoid] = address.id
 
             session.commit()
             normalized_df["address_id"] = normalized_df["closest_geoid"].map(

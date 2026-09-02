@@ -1,15 +1,14 @@
 from typing import Optional
 import pandas as pd
 from prefect import task, get_run_logger
-from ca_biositing.pipeline.etl.extract.factory import create_extractor
 from ca_biositing.pipeline.utils.gdrive_to_pandas import gdrive_to_df
+import geopandas as gpd
 import os
-import gspread
 
 @task
-def extract(project_root: Optional[str] = None) -> Optional[pd.DataFrame]:
+def extract(project_root: Optional[str] = None) -> Optional[gpd.GeoDataFrame]:
     """
-    Extracts raw food processing facilities data from a .csv file on Google Drive.
+    Extracts raw data from a .geojson file.
 
     This function serves as the 'Extract' step in an ETL pipeline. It connects
     to the data source and returns the data as is, without transformation.
@@ -19,30 +18,27 @@ def extract(project_root: Optional[str] = None) -> Optional[pd.DataFrame]:
     """
     logger = get_run_logger()
 
-    FILE_NAME = "CA_proc_points.zip"
-    MIME_TYPE = "application/zip"
+    FILE_NAME = "US_Railways.geojson"
+    MIME_TYPE = "application/geo+json"
     CREDENTIALS_PATH = os.getenv("CREDENTIALS_PATH", "credentials.json")
     DATASET_FOLDER = "src/ca_biositing/pipeline/ca_biositing/pipeline/temp_external_datasets/"
     logger.info(f"Extracting raw data from '{FILE_NAME}'...")
 
+    # If project_root is provided (e.g., from a notebook), construct an absolute path
+    # Otherwise, use the default relative path (for the main pipeline)
     credentials_path = CREDENTIALS_PATH
     dataset_folder = DATASET_FOLDER
     if project_root:
         credentials_path = os.path.join(project_root, CREDENTIALS_PATH)
         dataset_folder = os.path.join(project_root, DATASET_FOLDER)
 
+    # The gdrive_to_df function handles authentication, data fetching, and error handling.
     raw_df = gdrive_to_df(FILE_NAME, MIME_TYPE, credentials_path, dataset_folder)
+
 
     if raw_df is None:
         logger.error("Failed to extract data. Aborting.")
         return None
 
     logger.info("Successfully extracted raw data.")
-
-    GSHEET_NAME = "address-to-geocoded"
-    WORKSHEET_NAME = "Food Processor Facilities"
-    logger.info(f"Creating extractor for Google Sheet '{GSHEET_NAME}' (worksheet '{WORKSHEET_NAME}')...")
-
-    geocoded_extractor = create_extractor(GSHEET_NAME, WORKSHEET_NAME)
-
-    return raw_df, geocoded_extractor
+    return raw_df
