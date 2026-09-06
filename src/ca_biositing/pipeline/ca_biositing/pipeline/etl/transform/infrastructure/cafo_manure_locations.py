@@ -85,6 +85,17 @@ def transform(
 
     # 3. Merge geocoded information with incoming data
 
+    # Ensure consistent data types for merge columns to avoid type mismatch errors
+    # Convert zips to string in both dataframes
+    if 'zip' in combined_df.columns:
+        combined_df['zip'] = combined_df['zip'].astype(str).str.strip()
+        combined_df['zip'] = combined_df['zip'].replace(['nan', 'None', ''], pd.NA)
+
+    geocoded_df = cleaning_mod.standard_clean(geocoded_df)
+    if 'zip' in geocoded_df.columns:
+        geocoded_df['zip'] = geocoded_df['zip'].astype(str).str.strip()
+        geocoded_df['zip'] = geocoded_df['zip'].replace(['nan', 'None', ''], pd.NA)
+
     geocoded_df = cleaning_mod.standard_clean(geocoded_df)
     GEOCODED_DF_FILTER = MERGE_COLUMNS + geocoded_columns
 
