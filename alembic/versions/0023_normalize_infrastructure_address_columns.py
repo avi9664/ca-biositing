@@ -1,7 +1,7 @@
 """normalize infrastructure address columns
 
-Revision ID: 0022
-Revises: 0021
+Revision ID: 0023
+Revises: 0022
 Create Date: 2026-05-20 23:52:51.451001
 
 """
@@ -14,8 +14,8 @@ import geoalchemy2
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0022'
-down_revision: Union[str, Sequence[str], None] = '0021'
+revision: str = '0023'
+down_revision: Union[str, Sequence[str], None] = '0022'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -234,6 +234,41 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('object_id'),
     )
 
+    # -- infrastructure_food_manufacturers_epa --
+    op.create_table("infrastructure_food_manufacturers_epa",
+        sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('manufacturer_id', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('naics_code_description', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('naics_code', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('phone', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('website', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('excess_food_estimate_low_tons_per_year', sa.Numeric(), nullable=True),
+        sa.Column('excess_food_estimate_high_tons_per_year', sa.Numeric(), nullable=True),
+        sa.Column('address_id', sa.Integer(), sa.ForeignKey('location_address.id'), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.Column('etl_run_id', sa.Integer(), nullable=True),
+        sa.Column('lineage_group_id', sa.Integer(), nullable=True),
+        sa.PrimaryKeyConstraint('manufacturer_id'),) 
+
+    # -- infrastructure_food_manufacturers_carb --
+    op.create_table("infrastructure_food_manufacturers_carb",
+            sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('processing_facility_id', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('primary_ag_product', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('process_type', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('byproducts', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('quantities', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('general_source_info', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('air_district', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('carb_facility_id', sa.Integer(), nullable=True),
+            sa.Column('address_id', sa.Integer(), sa.ForeignKey('location_address.id'), nullable=True),
+            sa.Column('created_at', sa.DateTime(), nullable=True),
+            sa.Column('updated_at', sa.DateTime(), nullable=True),
+            sa.Column('etl_run_id', sa.Integer(), nullable=True),
+            sa.Column('lineage_group_id', sa.Integer(), nullable=True),
+            sa.PrimaryKeyConstraint('processing_facility_id'),) 
+
 
 
 def downgrade() -> None:
@@ -404,3 +439,5 @@ def downgrade() -> None:
                   sa.Column('zipcode', sa.VARCHAR(), nullable=True))
     op.drop_table('infrastructure_crude_oil_pipelines')
     op.drop_table('infrastructure_railways')
+    op.drop_table('infrastructure_food_manufacturers_epa')
+    op.drop_table('infrastructure_food_manufacturers_carb')

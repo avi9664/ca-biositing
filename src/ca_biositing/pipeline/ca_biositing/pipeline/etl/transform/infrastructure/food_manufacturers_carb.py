@@ -1,10 +1,9 @@
 """
-ETL Transform: CAFO Manure Locations.
+ETL Transform: Food Manufacturers.
 
-Transforms raw CSV data from the CAFO Manure Locations dataset into a structured
-format matching InfrastructureCafoManureLocations. Address columns (address, town,
-state, zip) are merged and geocoded via parse_addresses to populate LocationAddress
-and Place.
+Transforms raw CSV data from the Food Manufacturers dataset into a structured
+format matching InfrastructureFoodManufacturers. Address, city, and state columns
+are merged and geocoded via parse_addresses to populate LocationAddress and Place.
 """
 
 import pandas as pd
@@ -16,12 +15,12 @@ from ca_biositing.pipeline.utils.cleaning_functions import coercion as coercion_
 from ca_biositing.pipeline.utils.name_id_swap import normalize_dataframes
 from ca_biositing.pipeline.utils.geo_utils import parse_addresses
 
-EXTRACT_SOURCES: List[str] = ["cafo_manure_locations"]
+EXTRACT_SOURCES: List[str] = ["food_manufacturers_carb"]
 
-MERGE_COLUMNS = ["facility_name", "state", "address", "town", "zip"]
+MERGE_COLUMNS = ["name", "address", "city", "county", "state", "zip"]
 
 # don't edit
-geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips","address_id"]
+geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips"]
 
 @task
 def transform(
@@ -31,7 +30,7 @@ def transform(
     lineage_group_id: int = None,
 ) -> Optional[pd.DataFrame]:
     """
-    Transforms raw CAFO manure locations data.
+    Transforms raw ethanol biorefineries data.
 
     Args:
         data_sources: Dict keyed by source name containing raw DataFrames.
@@ -39,7 +38,7 @@ def transform(
         lineage_group_id: ID of the lineage group.
 
     Returns:
-        A DataFrame ready for loading into infrastructure_cafo_manure_locations.
+        A DataFrame ready for loading into infrastructure_ethanol_biorefineries.
     """
     try:
         logger = get_run_logger()
@@ -72,9 +71,9 @@ def transform(
 
         coerced_df = coercion_mod.coerce_columns(
             cleaned_df,
-            int_cols=["animal_units", "animal_count"],
-            float_cols=["manure_total_solids_million_gallons_per_year", "latitude", "longitude"],
-            datetime_cols=["date_accessed"],
+            int_cols=["processing_facility_id", "carb_facility_id"],
+            float_cols=["latitude", "longitude"],
+            datetime_cols=[],
         )
         processed_dfs.append(coerced_df)
 
@@ -96,7 +95,7 @@ def transform(
         geocoded_df['zip'] = geocoded_df['zip'].astype(str).str.strip()
         geocoded_df['zip'] = geocoded_df['zip'].replace(['nan', 'None', ''], pd.NA)
 
-    geocoded_df = cleaning_mod.standard_clean(geocoded_df)
+    
     GEOCODED_DF_FILTER = MERGE_COLUMNS + geocoded_columns
 
     added_address_df = pd.merge(combined_df, geocoded_df[GEOCODED_DF_FILTER], on=MERGE_COLUMNS, how='left')
@@ -108,7 +107,7 @@ def transform(
 
     # 4b. Column Renaming — map post-clean source names to DB column names
     rename_columns = {
-        "manure_total_solids_million_gallons_per_year": "manure_total_solids"
+        # none
     }
     normalized_df = normalized_df.rename(columns=rename_columns)
 
@@ -171,7 +170,7 @@ def transform(
                 f"Mapped {len(place_to_address_map)} counties to LocationAddresses"
             )
 
-    # 6. Final Column Selection — matches InfrastructureCafoManureLocations fields
+    # 6. Final Column Selection — matches InfrastructureEthanolBiorefineries fields
     try:
         if etl_run_id:
             normalized_df["etl_run_id"] = etl_run_id
@@ -180,17 +179,15 @@ def transform(
 
         final_df = normalized_df[
             [
-                "latitude",
-                "longitude",
-                "owner_name",
-                "facility_name",
-                "animal",
-                "animal_feed_operation_type",
-                "animal_units",
-                "animal_count",
-                "manure_total_solids",
-                "source",
-                "date_accessed",
+                "name",
+                "processing_facility_id",
+                "primary_ag_product",
+                "process_type",
+                "byproducts",
+                "quantities",
+                "general_source_info",
+                "carb_facility_id",
+                "air_district",
                 "address_id",
             ]
         ].copy()
