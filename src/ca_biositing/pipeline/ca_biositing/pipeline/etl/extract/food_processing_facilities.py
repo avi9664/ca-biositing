@@ -14,8 +14,14 @@ def extract(project_root: Optional[str] = None) -> Optional[pd.DataFrame]:
     This function serves as the 'Extract' step in an ETL pipeline. It connects
     to the data source and returns the data as is, without transformation.
 
+    Args:
+        project_root: Optional absolute path to project root for resolving credentials
+            and dataset folder paths. Used primarily in notebook contexts.
+
     Returns:
-        A pandas DataFrame containing the raw data, or None if an error occurs.
+        A tuple of (raw_df, geocoded_extractor) where:
+            - raw_df: pandas DataFrame containing the raw data, or None if extraction fails.
+            - geocoded_extractor: Callable that extracts geocoded addresses from Google Sheets.
     """
     logger = get_run_logger()
 
