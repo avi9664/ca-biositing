@@ -249,7 +249,7 @@ def upgrade() -> None:
         sa.Column('updated_at', sa.DateTime(), nullable=True),
         sa.Column('etl_run_id', sa.Integer(), nullable=True),
         sa.Column('lineage_group_id', sa.Integer(), nullable=True),
-        sa.PrimaryKeyConstraint('manufacturer_id'),) 
+        sa.PrimaryKeyConstraint('manufacturer_id'),)
 
     # -- infrastructure_food_manufacturers_carb --
     op.create_table("infrastructure_food_manufacturers_carb",
@@ -267,7 +267,32 @@ def upgrade() -> None:
             sa.Column('updated_at', sa.DateTime(), nullable=True),
             sa.Column('etl_run_id', sa.Integer(), nullable=True),
             sa.Column('lineage_group_id', sa.Integer(), nullable=True),
-            sa.PrimaryKeyConstraint('processing_facility_id'),) 
+            sa.PrimaryKeyConstraint('processing_facility_id'),)
+
+    # -- infrastructure_tomato_processors --
+    op.create_table("infrastructure_tomato_processors",
+            sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('processing_facility_id', sa.Integer(), nullable=True),
+            sa.Column('processing_capacity_for_tomato_paste_tons_hr', sa.Integer(), nullable=True),
+            sa.Column('processing_capacity_of_peeled_chopped_tons_hr', sa.Numeric(), nullable=True),
+            sa.Column('mold_metric_tons_yr', sa.Integer(), nullable=True),
+            sa.Column('green_metric_tons_yr', sa.Integer(), nullable=True),
+            sa.Column('vines_metric_tons_yr', sa.Integer(), nullable=True),
+            sa.Column('pomace_metric_tons_yr', sa.Integer(), nullable=True),
+            sa.Column('pomace_peels_metric_tons_yr', sa.Integer(), nullable=True),
+            sa.Column('pomace_seeds_metric_tons_yr', sa.Integer(), nullable=True),
+            sa.Column('peels_only_metric_tons_yr', sa.Integer(), nullable=True),
+            sa.Column('seeds_metric_tons_yr', sa.Integer(), nullable=True),
+            sa.Column('paste_data_source', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('chopped_data_source', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('reliability_of_chopped_data', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('link', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('address_id', sa.Integer(), sa.ForeignKey('location_address.id'), nullable=True),
+            sa.Column('created_at', sa.DateTime(), nullable=True),
+            sa.Column('updated_at', sa.DateTime(), nullable=True),
+            sa.Column('etl_run_id', sa.Integer(), nullable=True),
+            sa.Column('lineage_group_id', sa.Integer(), nullable=True),
+            sa.PrimaryKeyConstraint('processing_facility_id'),)
 
 
 
@@ -441,3 +466,4 @@ def downgrade() -> None:
     op.drop_table('infrastructure_railways')
     op.drop_table('infrastructure_food_manufacturers_epa')
     op.drop_table('infrastructure_food_manufacturers_carb')
+    op.drop_table('infrastructure_ttomato_processors')

@@ -1,9 +1,9 @@
 """
-ETL Transform: Food Manufacturers.
+ETL Transform: Tomato Processors.
 
-Transforms raw CSV data from the Food Manufacturers dataset into a structured
-format matching InfrastructureFoodManufacturers. Address, city, and state columns
-are merged and geocoded via parse_addresses to populate LocationAddress and Place.
+Transforms raw CSV data from the Tomato Processors dataset into a structured
+format matching InfrastructureTomatoProcessors. Name, address, city, and state columns
+are merged with geocoded data to populate LocationAddress and Place.
 """
 
 import pandas as pd
@@ -15,9 +15,9 @@ from ca_biositing.pipeline.utils.cleaning_functions import coercion as coercion_
 from ca_biositing.pipeline.utils.name_id_swap import normalize_dataframes
 from ca_biositing.pipeline.utils.geo_utils import parse_addresses
 
-EXTRACT_SOURCES: List[str] = ["food_manufacturers_epa"]
+EXTRACT_SOURCES: List[str] = ["tomato_processors"]
 
-MERGE_COLUMNS = ["name", "address", "city", "county", "state", "zip_code"]
+MERGE_COLUMNS = ["name", "address", "city", "county"]
 
 # don't edit
 geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips"]
@@ -30,7 +30,7 @@ def transform(
     lineage_group_id: int = None,
 ) -> Optional[pd.DataFrame]:
     """
-    Transforms raw ethanol biorefineries data.
+    Transforms raw tomato processors data.
 
     Args:
         data_sources: Dict keyed by source name containing raw DataFrames.
@@ -38,7 +38,7 @@ def transform(
         lineage_group_id: ID of the lineage group.
 
     Returns:
-        A DataFrame ready for loading into infrastructure_ethanol_biorefineries.
+        A DataFrame ready for loading into infrastructure_tomato_processors.
     """
     try:
         logger = get_run_logger()
@@ -71,8 +71,16 @@ def transform(
 
         coerced_df = coercion_mod.coerce_columns(
             cleaned_df,
-            int_cols=[],
-            float_cols=["excess_food_estimate_low_tons_per_year_", "excess_food_estimate_high_tons_per_year_"],
+            int_cols=["processing_capacity_for_tomato_paste_tons_hr_", 
+                      "mold_metric_tons_yr", 
+                      "green_metric_tons_yr", 
+                      "vines_metric_tons_yr", 
+                      "pomace_metric_tons_yr", 
+                      "pomace_peels_metric_tons_yr",
+                      "pomace_seeds_metric_tons_yr",
+                      "peels_only_metric_tons_yr",
+                      "seeds_metric_tons_yr"],
+            float_cols=["latitude", "longitude", "processing_capacity_of_peeled_chopped_tons_hr_"],
             datetime_cols=[],
         )
         processed_dfs.append(coerced_df)
@@ -85,17 +93,10 @@ def transform(
     # 3. Merge geocoded information with incoming data
 
     # Ensure consistent data types for merge columns to avoid type mismatch errors
-    # Convert zip_codes to string in both dataframes
-    if 'zip_code' in combined_df.columns:
-        combined_df['zip_code'] = combined_df['zip_code'].astype(str).str.strip()
-        combined_df['zip_code'] = combined_df['zip_code'].replace(['nan', 'None', ''], pd.NA)
-
+    # Convert zips to string in both dataframes
+    
     geocoded_df = cleaning_mod.standard_clean(geocoded_df)
-    if 'zip_code' in geocoded_df.columns:
-        geocoded_df['zip_code'] = geocoded_df['zip_code'].astype(str).str.strip()
-        geocoded_df['zip_code'] = geocoded_df['zip_code'].replace(['nan', 'None', ''], pd.NA)
-
-
+    
     GEOCODED_DF_FILTER = MERGE_COLUMNS + geocoded_columns
 
     added_address_df = pd.merge(combined_df, geocoded_df[GEOCODED_DF_FILTER], on=MERGE_COLUMNS, how='left')
@@ -107,9 +108,8 @@ def transform(
 
     # 4b. Column Renaming — map post-clean source names to DB column names
     rename_columns = {
-        "excess_food_estimate_high_tons_per_year_": "excess_food_estimate_high_tons_per_year",
-        "excess_food_estimate_low_tons_per_year_": "excess_food_estimate_low_tons_per_year",
-        "unique_identifier": "manufacturer_id"
+        "processing_capacity_for_tomato_paste_tons_hr_": "processing_capacity_for_tomato_paste_tons_hr",
+        "processing_capacity_of_peeled_chopped_tons_hr_": "processing_capacity_of_peeled_chopped_tons_hr"
     }
     normalized_df = normalized_df.rename(columns=rename_columns)
 
@@ -182,14 +182,21 @@ def transform(
         final_df = normalized_df[
             [
                 "name",
-                "naics_code_description",
-                "naics_code",
+                "processing_capacity_for_tomato_paste_tons_hr", 
+                "processing_capacity_of_peeled_chopped_tons_hr",
+                "mold_metric_tons_yr", 
+                "green_metric_tons_yr", 
+                "vines_metric_tons_yr", 
+                "pomace_metric_tons_yr", 
+                "pomace_peels_metric_tons_yr",
+                "pomace_seeds_metric_tons_yr",
+                "peels_only_metric_tons_yr",
+                "seeds_metric_tons_yr",
+                "paste_data_source",
+                "chopped_data_source",
+                "reliability_of_chopped_data",
+                "link",
                 "address_id",
-                "phone",
-                "website",
-                "excess_food_estimate_low_tons_per_year",
-                "excess_food_estimate_high_tons_per_year",
-                "manufacturer_id"
             ]
         ].copy()
 
