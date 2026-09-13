@@ -4,7 +4,7 @@ Quick test script to verify newly added infrastructure ETL pipelines are importa
 
 newly_added = [
     "crude_oil_pipelines",
-    "railways", 
+    "railways",
     "biodiesel_plants",
     "tomato_processors",
     "food_manufacturers_epa",
@@ -22,19 +22,19 @@ for name in newly_added:
         # Test extract
         exec(f"from ca_biositing.pipeline.etl.extract import {name}")
         print(f"  ✓ Extract import OK")
-        
+
         # Test transform
         exec(f"from ca_biositing.pipeline.etl.transform.infrastructure import {name}")
         print(f"  ✓ Transform import OK")
-        
+
         # Test load
         exec(f"from ca_biositing.pipeline.etl.load.infrastructure import {name}")
         print(f"  ✓ Load import OK")
-        
+
         # Test flow
         exec(f"from ca_biositing.pipeline.flows import {name}")
         print(f"  ✓ Flow import OK")
-        
+
     except Exception as e:
         print(f"  ✗ FAILED: {e}")
         failed.append((name, str(e)))
