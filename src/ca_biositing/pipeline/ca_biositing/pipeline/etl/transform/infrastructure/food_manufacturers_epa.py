@@ -95,7 +95,7 @@ def transform(
         geocoded_df['zip_code'] = geocoded_df['zip_code'].astype(str).str.strip()
         geocoded_df['zip_code'] = geocoded_df['zip_code'].replace(['nan', 'None', ''], pd.NA)
 
-    
+
     GEOCODED_DF_FILTER = MERGE_COLUMNS + geocoded_columns
 
     added_address_df = pd.merge(combined_df, geocoded_df[GEOCODED_DF_FILTER], on=MERGE_COLUMNS, how='left')

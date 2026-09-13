@@ -1,9 +1,9 @@
 """
-ETL Transform: Food Manufacturers.
+ETL Transform: Food Manufacturers (CARB).
 
-Transforms raw CSV data from the Food Manufacturers dataset into a structured
-format matching InfrastructureFoodManufacturers. Address, city, and state columns
-are merged and geocoded via parse_addresses to populate LocationAddress and Place.
+Transforms raw CSV data from the Food Manufacturers CARB dataset into a structured
+format matching InfrastructureFoodManufacturersCARB. Facility name, address, city, county, state, and zip columns
+are merged with geocoded data to populate LocationAddress and Place.
 """
 
 import pandas as pd
@@ -30,7 +30,7 @@ def transform(
     lineage_group_id: int = None,
 ) -> Optional[pd.DataFrame]:
     """
-    Transforms raw ethanol biorefineries data.
+    Transforms raw Food Manufacturers CARB data.
 
     Args:
         data_sources: Dict keyed by source name containing raw DataFrames.
@@ -38,7 +38,7 @@ def transform(
         lineage_group_id: ID of the lineage group.
 
     Returns:
-        A DataFrame ready for loading into infrastructure_ethanol_biorefineries.
+        A DataFrame ready for loading into infrastructure_food_manufacturers_carbs.
     """
     try:
         logger = get_run_logger()
@@ -95,7 +95,7 @@ def transform(
         geocoded_df['zip'] = geocoded_df['zip'].astype(str).str.strip()
         geocoded_df['zip'] = geocoded_df['zip'].replace(['nan', 'None', ''], pd.NA)
 
-    
+
     GEOCODED_DF_FILTER = MERGE_COLUMNS + geocoded_columns
 
     added_address_df = pd.merge(combined_df, geocoded_df[GEOCODED_DF_FILTER], on=MERGE_COLUMNS, how='left')
