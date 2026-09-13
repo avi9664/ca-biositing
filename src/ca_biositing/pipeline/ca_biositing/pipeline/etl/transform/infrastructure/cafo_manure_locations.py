@@ -35,6 +35,7 @@ def transform(
 
     Args:
         data_sources: Dict keyed by source name containing raw DataFrames.
+        geocoded_df: DataFrame containing geocoded addresses from Google Sheets.
         etl_run_id: ID of the current ETL run.
         lineage_group_id: ID of the lineage group.
 

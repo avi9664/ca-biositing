@@ -30,15 +30,16 @@ def transform(
     lineage_group_id: int = None,
 ) -> Optional[pd.DataFrame]:
     """
-    Transforms raw ethanol biorefineries data.
+    Transforms raw food manufacturers data from EPA.
 
     Args:
         data_sources: Dict keyed by source name containing raw DataFrames.
+        geocoded_df: DataFrame containing geocoded addresses from Google Sheets.
         etl_run_id: ID of the current ETL run.
         lineage_group_id: ID of the lineage group.
 
     Returns:
-        A DataFrame ready for loading into infrastructure_ethanol_biorefineries.
+        A DataFrame ready for loading into infrastructure_food_manufacturing_epa.
     """
     try:
         logger = get_run_logger()

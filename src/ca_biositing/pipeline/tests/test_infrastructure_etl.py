@@ -31,6 +31,12 @@ INFRASTRUCTURE_DATASETS = [
     "msw_to_energy_anaerobic_digesters",
     "saf_and_renewable_diesel_plants",
     "wastewater_treatment_plants",
+    "crude_oil_pipelines",
+    "railways",
+    "biodiesel_plants",
+    "tomato_processors",
+    "food_manufacturers_epa",
+    "food_manufacturers_carb",
 ]
 
 # petroleum_pipelines load is in infrastructure/ subdir; all others too
