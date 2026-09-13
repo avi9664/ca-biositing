@@ -22,7 +22,7 @@ class InfrastructureTomatoProcessors(SQLModel, table=True):
     paste_data_source: Optional[str] = Field(default=None)
     chopped_data_source: Optional[str] = Field(default=None)
     reliability_of_chopped_data: Optional[str] = Field(default=None)
-    link: Optional[str] = Field(default=None)     
+    link: Optional[str] = Field(default=None)
     address_id: Optional[int] = Field(default=None, foreign_key="location_address.id")
     created_at: Optional[datetime] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)
