@@ -72,11 +72,11 @@ def transform(
 
         coerced_df = coercion_mod.coerce_columns(
             cleaned_df,
-            int_cols=["processing_capacity_for_tomato_paste_tons_hr_", 
-                      "mold_metric_tons_yr", 
-                      "green_metric_tons_yr", 
-                      "vines_metric_tons_yr", 
-                      "pomace_metric_tons_yr", 
+            int_cols=["processing_capacity_for_tomato_paste_tons_hr_",
+                      "mold_metric_tons_yr",
+                      "green_metric_tons_yr",
+                      "vines_metric_tons_yr",
+                      "pomace_metric_tons_yr",
                       "pomace_peels_metric_tons_yr",
                       "pomace_seeds_metric_tons_yr",
                       "peels_only_metric_tons_yr",
@@ -95,9 +95,9 @@ def transform(
 
     # Ensure consistent data types for merge columns to avoid type mismatch errors
     # Convert zips to string in both dataframes
-    
+
     geocoded_df = cleaning_mod.standard_clean(geocoded_df)
-    
+
     GEOCODED_DF_FILTER = MERGE_COLUMNS + geocoded_columns
 
     added_address_df = pd.merge(combined_df, geocoded_df[GEOCODED_DF_FILTER], on=MERGE_COLUMNS, how='left')
@@ -183,12 +183,12 @@ def transform(
         final_df = normalized_df[
             [
                 "name",
-                "processing_capacity_for_tomato_paste_tons_hr", 
+                "processing_capacity_for_tomato_paste_tons_hr",
                 "processing_capacity_of_peeled_chopped_tons_hr",
-                "mold_metric_tons_yr", 
-                "green_metric_tons_yr", 
-                "vines_metric_tons_yr", 
-                "pomace_metric_tons_yr", 
+                "mold_metric_tons_yr",
+                "green_metric_tons_yr",
+                "vines_metric_tons_yr",
+                "pomace_metric_tons_yr",
                 "pomace_peels_metric_tons_yr",
                 "pomace_seeds_metric_tons_yr",
                 "peels_only_metric_tons_yr",
