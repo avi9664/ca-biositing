@@ -193,6 +193,8 @@ def transform(
                 "source",
                 "date_accessed",
                 "address_id",
+                'etl_run_id',
+                'lineage_group_id',
             ]
         ].copy()
 

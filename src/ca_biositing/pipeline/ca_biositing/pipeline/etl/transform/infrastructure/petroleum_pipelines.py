@@ -123,6 +123,8 @@ def transform(
                 "mode_type",
                 "length",
                 "geom",
+                'etl_run_id',
+                'lineage_group_id',
             ]
         ].copy()
 

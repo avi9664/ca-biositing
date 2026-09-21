@@ -72,7 +72,10 @@ def transform(
 
         coerced_df = coercion_mod.coerce_columns(
             cleaned_df,
-            int_cols=[],
+            int_cols=[
+                'etl_run_id',
+                'lineage_group_id',
+            ],
             float_cols=[
                 "flow_design_adjusted_mgd",
                 "flow_average_mgd",
@@ -223,6 +226,8 @@ def transform(
                 "latitude",
                 "longitude",
                 "address_id",
+                'etl_run_id',
+                'lineage_group_id',
             ]
         ].copy()
 

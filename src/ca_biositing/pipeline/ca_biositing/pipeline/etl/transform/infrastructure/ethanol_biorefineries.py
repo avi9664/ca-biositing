@@ -176,6 +176,8 @@ def transform(
                 "production_mgy",
                 "constr_exp",
                 "address_id",
+                'etl_run_id',
+                'lineage_group_id',
             ]
         ].copy()
 

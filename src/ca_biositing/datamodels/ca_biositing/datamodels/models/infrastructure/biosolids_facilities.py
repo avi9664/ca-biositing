@@ -41,6 +41,8 @@ class InfrastructureBiosolidsFacilities(SQLModel, table=True):
     name_of_other: Optional[str] = Field(default=None)
     incineration: Optional[int] = Field(default=None)
     address_id: Optional[int] = Field(default=None, foreign_key="location_address.id")
+    etl_run_id: Optional[int] = Field(default=None, foreign_key="etl_run.id")
+    lineage_group_id: Optional[int] = Field(default=None)
     created_at: Optional[datetime] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)
 

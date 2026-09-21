@@ -21,6 +21,8 @@ class InfrastructureBiodieselPlants(SQLModel, table=True):
     latitude: Optional[Decimal] = Field(default=None)
     longitude: Optional[Decimal] = Field(default=None)
     source: Optional[str] = Field(default=None)
+    etl_run_id: Optional[int] = Field(default=None, foreign_key="etl_run.id")
+    lineage_group_id: Optional[int] = Field(default=None)
     created_at: Optional[datetime] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)
 

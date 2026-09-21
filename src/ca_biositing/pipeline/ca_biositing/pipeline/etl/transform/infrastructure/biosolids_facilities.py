@@ -235,6 +235,8 @@ def transform(
                 "name_of_other",
                 "incineration",
                 "address_id",
+                'etl_run_id',
+                'lineage_group_id',
             ]
         ].copy()
 
