@@ -190,6 +190,8 @@ def transform(
                 "carb_facility_id",
                 "air_district",
                 "address_id",
+                'etl_run_id',
+                'lineage_group_id',
             ]
         ].copy()
 

@@ -22,5 +22,7 @@ class InfrastructureRailways(SQLModel, table=True):
     mode_type: Optional[str] = Field(default=None)
     length: Optional[Decimal] = Field(default=None)
     geom: Optional[Any] = Field(default=None, sa_column=Column(Geometry("MULTILINESTRING")))
+    etl_run_id: Optional[int] = Field(default=None, foreign_key="etl_run.id")
+    lineage_group_id: Optional[int] = Field(default=None)
     created_at: Optional[datetime] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)

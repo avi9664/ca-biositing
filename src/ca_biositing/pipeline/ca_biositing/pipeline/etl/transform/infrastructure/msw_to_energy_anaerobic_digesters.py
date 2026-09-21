@@ -17,10 +17,15 @@ from ca_biositing.pipeline.utils.geo_utils import parse_addresses
 
 EXTRACT_SOURCES: List[str] = ["msw_to_energy_anaerobic_digesters"]
 
+MERGE_COLUMNS = ["name", "city", "county"]
+
+# don't edit
+geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips","address_id"]
 
 @task
 def transform(
     data_sources: Dict[str, pd.DataFrame],
+    geocoded_df: pd.DataFrame,
     etl_run_id: int = None,
     lineage_group_id: int = None,
 ) -> Optional[pd.DataFrame]:
@@ -84,14 +89,10 @@ def transform(
     combined_df = pd.concat(processed_dfs, ignore_index=True)
 
     # 3. Geocode addresses — city and county are available
-    address_df, geoid_df = parse_addresses(
-        combined_df,
-        merge_columns=["city", "county"],
-        lat="latitude",
-        long="longitude",
-    )
+    geocoded_df = cleaning_mod.standard_clean(geocoded_df)
+    GEOCODED_DF_FILTER = MERGE_COLUMNS + geocoded_columns
 
-    added_address_df = pd.concat([combined_df, address_df, geoid_df], axis=1)
+    added_address_df = pd.merge(combined_df, geocoded_df[GEOCODED_DF_FILTER], on=MERGE_COLUMNS, how='left')
 
     # 4. Normalization
     normalize_columns = {}
@@ -201,6 +202,8 @@ def transform(
                 "latitude",
                 "longitude",
                 "address_id",
+                "etl_run_id",
+                "lineage_group_id"
             ]
         ].copy()
 

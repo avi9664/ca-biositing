@@ -211,6 +211,8 @@ def transform(
                 "latitude",
                 "longitude",
                 "address_id",
+                'etl_run_id',
+                'lineage_group_id',
             ]
         ].copy()
 

@@ -191,6 +191,8 @@ def transform(
                 "excess_food_estimate_low_tons_per_year",
                 "excess_food_estimate_high_tons_per_year",
                 "manufacturer_id"
+                'etl_run_id',
+                'lineage_group_id',
             ]
         ].copy()
 

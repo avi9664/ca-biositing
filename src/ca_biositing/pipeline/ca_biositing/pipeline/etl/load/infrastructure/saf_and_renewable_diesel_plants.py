@@ -39,13 +39,18 @@ def load(df: pd.DataFrame) -> bool:
                     if i > 0 and i % 500 == 0:
                         logger.info(f"Processed {i} records...")
 
+                    # Keep only columns that exist in the model
                     clean_record = {k: v for k, v in record.items() if k in table_columns}
+                        # Handle timestamps
+                    clean_record['updated_at'] = now
+                    if clean_record.get('created_at') is None:
+                        clean_record['created_at'] = now
 
                     stmt = insert(InfrastructureSafAndRenewableDieselPlants).values(clean_record)
                     update_dict = {
                         c.name: stmt.excluded[c.name]
                         for c in InfrastructureSafAndRenewableDieselPlants.__table__.columns
-                        if c.name not in ["ibcc_index"]
+                        if c.name not in ["ibcc_index", 'created_at', 'record_id']
                     }
                     upsert_stmt = stmt.on_conflict_do_update(
                         index_elements=["ibcc_index"],

@@ -17,6 +17,8 @@ class InfrastructureFoodManufacturersCARB(SQLModel, table=True):
     carb_facility_id: Optional[int] = Field(default=None)
     air_district: Optional[str] = Field(default=None)
     address_id: Optional[int] = Field(default=None, foreign_key="location_address.id")
+    etl_run_id: Optional[int] = Field(default=None, foreign_key="etl_run.id")
+    lineage_group_id: Optional[int] = Field(default=None)
     created_at: Optional[datetime] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)
 
