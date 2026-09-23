@@ -264,7 +264,7 @@ def upgrade() -> None:
         sa.Column('geom', geoalchemy2.types.Geometry("MULTILINESTRING"), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.Column('updated_at', sa.DateTime(), nullable=True),
-        sa.Column('etl_run_id', sa.Integer(), nullable=True),
+        sa.Column('etl_run_id', sa.Integer(), sa.ForeignKey('etl_run.id'), nullable=True),
         sa.Column('lineage_group_id', sa.Integer(), nullable=True),
         sa.PrimaryKeyConstraint('object_id'),
     )
@@ -286,7 +286,7 @@ def upgrade() -> None:
         sa.Column('geom', geoalchemy2.types.Geometry("MULTILINESTRING"), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.Column('updated_at', sa.DateTime(), nullable=True),
-        sa.Column('etl_run_id', sa.Integer(), nullable=True),
+        sa.Column('etl_run_id', sa.Integer(), sa.ForeignKey('etl_run.id'), nullable=True),
         sa.Column('lineage_group_id', sa.Integer(), nullable=True),
         sa.PrimaryKeyConstraint('object_id'),
     )
@@ -304,7 +304,7 @@ def upgrade() -> None:
         sa.Column('address_id', sa.Integer(), sa.ForeignKey('location_address.id'), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.Column('updated_at', sa.DateTime(), nullable=True),
-        sa.Column('etl_run_id', sa.Integer(), nullable=True),
+        sa.Column('etl_run_id', sa.Integer(), sa.ForeignKey('etl_run.id'), nullable=True),
         sa.Column('lineage_group_id', sa.Integer(), nullable=True),
         sa.PrimaryKeyConstraint('manufacturer_id'),)
 
@@ -322,7 +322,7 @@ def upgrade() -> None:
             sa.Column('address_id', sa.Integer(), sa.ForeignKey('location_address.id'), nullable=True),
             sa.Column('created_at', sa.DateTime(), nullable=True),
             sa.Column('updated_at', sa.DateTime(), nullable=True),
-            sa.Column('etl_run_id', sa.Integer(), nullable=True),
+            sa.Column('etl_run_id', sa.Integer(), sa.ForeignKey('etl_run.id'), nullable=True),
             sa.Column('lineage_group_id', sa.Integer(), nullable=True),
             sa.PrimaryKeyConstraint('processing_facility_id'),)
 
@@ -347,7 +347,7 @@ def upgrade() -> None:
             sa.Column('address_id', sa.Integer(), sa.ForeignKey('location_address.id'), nullable=True),
             sa.Column('created_at', sa.DateTime(), nullable=True),
             sa.Column('updated_at', sa.DateTime(), nullable=True),
-            sa.Column('etl_run_id', sa.Integer(), nullable=True),
+            sa.Column('etl_run_id', sa.Integer(), sa.ForeignKey('etl_run.id'), nullable=True),
             sa.Column('lineage_group_id', sa.Integer(), nullable=True),
             sa.PrimaryKeyConstraint('processing_facility_id'),)
 
