@@ -133,7 +133,7 @@ def transform(
         with Session(engine) as session:
             # Get unique county_ids (these are geoids from Place table)
             place_to_address_map = {}
-            
+
             # Convert pandas NA to None for database insertion
             def to_none_if_na(value):
                 return None if pd.isna(value) else value
@@ -203,12 +203,12 @@ def transform(
                 has_valid_geoid = geoid is not pd.NA and geoid is not None and geoid != "" and geoid != "00000"
                 map_key = geoid if has_valid_geoid else f"latlon_{row_idx}"
                 return place_to_address_map.get(map_key)
-            
+
             normalized_df['address_id'] = [
-                get_address_id(idx, row) 
+                get_address_id(idx, row)
                 for idx, row in normalized_df.iterrows()
             ]
-            
+
             logger.info(f"Created/mapped {len(place_to_address_map)} LocationAddress records")
             valid_addresses = normalized_df['address_id'].notna().sum()
             logger.info(f"Successfully assigned address_id to {valid_addresses}/{len(normalized_df)} records")
