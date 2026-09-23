@@ -7,7 +7,7 @@ from typing import Optional
 class InfrastructureTomatoProcessors(SQLModel, table=True):
     __tablename__ = "infrastructure_tomato_processors"
 
-    processing_facility_id: Optional[str] = Field(default=None, primary_key=True)
+    processing_facility_id: Optional[int] = Field(default=None, primary_key=True)
     name: Optional[str] = Field(default=None)
     processing_capacity_for_tomato_paste_tons_hr: Optional[int] = Field(default=None)
     processing_capacity_of_peeled_chopped_tons_hr: Optional[Decimal] = Field(default=None)

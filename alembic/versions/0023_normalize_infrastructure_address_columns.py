@@ -294,7 +294,7 @@ def upgrade() -> None:
     # -- infrastructure_food_manufacturers_epa --
     op.create_table("infrastructure_food_manufacturers_epa",
         sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column('manufacturer_id', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column('manufacturer_id', sa.Integer(), nullable=True),
         sa.Column('naics_code_description', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column('naics_code', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column('phone', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
@@ -311,7 +311,7 @@ def upgrade() -> None:
     # -- infrastructure_food_manufacturers_carb --
     op.create_table("infrastructure_food_manufacturers_carb",
             sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-            sa.Column('processing_facility_id', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column('processing_facility_id', sa.Integer(), nullable=True),
             sa.Column('primary_ag_product', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
             sa.Column('process_type', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
             sa.Column('byproducts', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
