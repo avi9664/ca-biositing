@@ -133,7 +133,7 @@ def transform(
         with Session(engine) as session:
             # Get unique county_ids (these are geoids from Place table)
             place_to_address_map = {}
-            
+
             # Convert pandas NA to None for database insertion
             def to_none_if_na(value):
                 return None if pd.isna(value) else value
@@ -141,12 +141,12 @@ def transform(
             for index, row in normalized_df.iterrows():
                 geoid = row["closest_geoid"]
                 has_valid_geoid = geoid is not pd.NA and geoid is not None and geoid != "" and geoid != "00000"
-                
+
                 # Check if we have lat/lon coordinates for this record
                 # Note: geocoded data may have these as strings, need to try convert
                 lat_val = row.get("closest_latitude")
                 lon_val = row.get("closest_longitude")
-                
+
                 # Try to convert to float if they're strings
                 try:
                     if pd.notna(lat_val) and lat_val != "":
@@ -155,7 +155,7 @@ def transform(
                         lat_val = None
                 except (ValueError, TypeError):
                     lat_val = None
-                
+
                 try:
                     if pd.notna(lon_val) and lon_val != "":
                         lon_val = float(lon_val)
@@ -163,24 +163,24 @@ def transform(
                         lon_val = None
                 except (ValueError, TypeError):
                     lon_val = None
-                
+
                 has_latlon = (lat_val is not None and lon_val is not None)
-                
+
                 # Skip if no valid geoid AND no lat/lon
                 if not has_valid_geoid and not has_latlon:
                     logger.warning(f"Row {index}: No valid geoid or lat/lon, skipping")
                     continue
-                
+
                 # Use index as a unique key for records without valid geoid
                 map_key = geoid if has_valid_geoid else f"latlon_{index}"
-                
+
                 # If already processed this geoid/key, reuse the address_id
                 if map_key in place_to_address_map:
                     continue
-                
+
                 place = None
                 address = None
-                
+
                 if has_valid_geoid:
                     # Standard path: we have a valid geoid
                     stmt1 = select(Place).where(Place.geoid == geoid)
@@ -243,12 +243,12 @@ def transform(
                 has_valid_geoid = geoid is not pd.NA and geoid is not None and geoid != "" and geoid != "00000"
                 map_key = geoid if has_valid_geoid else f"latlon_{row_idx}"
                 return place_to_address_map.get(map_key)
-            
+
             normalized_df['address_id'] = [
-                get_address_id(idx, row) 
+                get_address_id(idx, row)
                 for idx, row in normalized_df.iterrows()
             ]
-            
+
             logger.info(f"Created/mapped {len(place_to_address_map)} LocationAddress records")
             valid_addresses = normalized_df['address_id'].notna().sum()
             logger.info(f"Successfully assigned address_id to {valid_addresses}/{len(normalized_df)} records")
