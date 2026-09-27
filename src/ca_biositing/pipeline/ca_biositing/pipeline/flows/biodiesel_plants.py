@@ -2,7 +2,7 @@
 from prefect import flow, get_run_logger
 from ca_biositing.pipeline.etl.extract.biodiesel_plants import extract
 from ca_biositing.pipeline.etl.transform.infrastructure.biodiesel_plants import transform
-from ca_biositing.pipeline.etl.load.biodiesel_plants import load
+from ca_biositing.pipeline.etl.load.infrastructure.biodiesel_plants import load
 from ca_biositing.pipeline.utils.lineage import create_etl_run_record, create_lineage_group
 
 @flow(name="Biodiesel Plants ETL", log_prints=True)

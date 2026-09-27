@@ -25,7 +25,7 @@ geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_addres
 @task
 def transform(
     data_sources: Dict[str, pd.DataFrame],
-    geocoded_df: pd.DataFrame,
+    geocoded_df: pd.DataFrame = pd.DataFrame(),
     etl_run_id: int = None,
     lineage_group_id: int = None,
 ) -> Optional[pd.DataFrame]:
@@ -190,7 +190,7 @@ def transform(
                 "website",
                 "excess_food_estimate_low_tons_per_year",
                 "excess_food_estimate_high_tons_per_year",
-                "manufacturer_id"
+                "manufacturer_id",
                 'etl_run_id',
                 'lineage_group_id',
             ]
