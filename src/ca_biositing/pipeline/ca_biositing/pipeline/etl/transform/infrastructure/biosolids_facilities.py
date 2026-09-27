@@ -21,7 +21,7 @@ geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_addres
 @task
 def transform(
     data_sources: Dict[str, pd.DataFrame],
-    geocoded_df: pd.DataFrame,
+    geocoded_df: pd.DataFrame = pd.DataFrame(),
     etl_run_id: int = None,
     lineage_group_id: int = None,
 ) -> Optional[pd.DataFrame]:
