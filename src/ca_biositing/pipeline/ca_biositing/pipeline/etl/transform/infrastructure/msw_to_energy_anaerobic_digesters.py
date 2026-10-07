@@ -171,7 +171,7 @@ def transform(
                     )),
                 axis=1
             )
-            
+
             logger.info(
                 f"Mapped {len(place_to_address_map)} points to LocationAddresses"
             )
