@@ -3,6 +3,7 @@ import numpy as np
 from datetime import datetime, timezone
 from prefect import task, get_run_logger
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ca_biositing.pipeline.utils.engine import get_engine
 
@@ -46,17 +47,25 @@ def load(df: pd.DataFrame) -> bool:
                     if clean_record.get('created_at') is None:
                         clean_record['created_at'] = now
 
-                    stmt = insert(InfrastructureMswToEnergyAnaerobicDigesters).values(clean_record)
-                    update_dict = {
-                        c.name: stmt.excluded[c.name]
-                        for c in InfrastructureMswToEnergyAnaerobicDigesters.__table__.columns
-                        if c.name not in ["wte_id", 'created_at', 'record_id']
-                    }
-                    upsert_stmt = stmt.on_conflict_do_update(
-                        index_elements=["wte_id"],
-                        set_=update_dict,
+                    stmt1 = select(InfrastructureMswToEnergyAnaerobicDigesters).where(
+                        InfrastructureMswToEnergyAnaerobicDigesters.facility_type == clean_record['facility_type'],
+                        InfrastructureMswToEnergyAnaerobicDigesters.address_id == clean_record['address_id']
                     )
-                    session.execute(upsert_stmt)
+                    existing_record = session.execute(stmt1).first()
+
+                    if not existing_record:
+
+                        stmt = insert(InfrastructureMswToEnergyAnaerobicDigesters).values(clean_record)
+                        update_dict = {
+                            c.name: stmt.excluded[c.name]
+                            for c in InfrastructureMswToEnergyAnaerobicDigesters.__table__.columns
+                            if c.name not in ["wte_id", 'created_at', 'record_id']
+                        }
+                        upsert_stmt = stmt.on_conflict_do_update(
+                            index_elements=["wte_id"],
+                            set_=update_dict,
+                        )
+                        session.execute(upsert_stmt)
 
                 session.commit()
 

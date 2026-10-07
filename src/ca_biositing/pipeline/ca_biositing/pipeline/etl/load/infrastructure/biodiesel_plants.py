@@ -48,23 +48,31 @@ def load(df: pd.DataFrame) -> bool:
                     if clean_record.get('created_at') is None:
                         clean_record['created_at'] = now
 
-                    # Build Upsert Statement (PostgreSQL specific)
-                    stmt = insert(InfrastructureBiodieselPlants).values(clean_record)
-
-                    # Define columns to update on conflict
-                    # Exclude primary keys and creation timestamps
-                    update_dict = {
-                        c.name: stmt.excluded[c.name]
-                        for c in InfrastructureBiodieselPlants.__table__.columns
-                        if c.name not in ['biodiesel_plant_id', 'created_at', 'record_id']
-                    }
-
-                    upsert_stmt = stmt.on_conflict_do_update(
-                        index_elements=['biodiesel_plant_id'], # Replace with your unique constraint column
-                        set_=update_dict
+                    stmt1 = select(InfrastructureBiodieselPlants).where(
+                        InfrastructureBiodieselPlants.company == clean_record['company'],
+                        InfrastructureBiodieselPlants.address_id == clean_record['address_id']
                     )
+                    existing_record = session.execute(stmt1).first()
 
-                    session.execute(upsert_stmt)
+                    if not existing_record:
+
+                        # Build Upsert Statement (PostgreSQL specific)
+                        stmt2 = insert(InfrastructureBiodieselPlants).values(clean_record)
+
+                        # Define columns to update on conflict
+                        # Exclude primary keys and creation timestamps
+                        update_dict = {
+                            c.name: stmt2.excluded[c.name]
+                            for c in InfrastructureBiodieselPlants.__table__.columns
+                            if c.name not in ['biodiesel_plant_id', 'created_at', 'record_id']
+                        }
+
+                        upsert_stmt = stmt2.on_conflict_do_update(
+                            index_elements=['biodiesel_plant_id'], # Replace with your unique constraint column
+                            set_=update_dict
+                        )
+
+                        session.execute(upsert_stmt)
 
                 session.commit()
         logger.info("Successfully upserted records.")
