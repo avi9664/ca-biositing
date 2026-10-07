@@ -14,6 +14,7 @@ from ca_biositing.pipeline.utils.cleaning_functions import cleaning as cleaning_
 from ca_biositing.pipeline.utils.cleaning_functions import coercion as coercion_mod
 from ca_biositing.pipeline.utils.name_id_swap import normalize_dataframes
 from ca_biositing.pipeline.utils.geo_utils import parse_addresses
+from datetime import datetime, timezone
 
 EXTRACT_SOURCES: List[str] = ["district_energy_systems"]
 
@@ -21,6 +22,9 @@ MERGE_COLUMNS = ["name", "state", "city"]
 
 # don't edit
 geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips","address_id"]
+
+def to_none_if_na(value):
+    return None if pd.isna(value) else value
 
 @task
 def transform(
@@ -127,8 +131,13 @@ def transform(
 
         with Session(engine) as session:
             place_to_address_map = {}
+            now = datetime.now(timezone.utc)
 
             for index, row in normalized_df.iterrows():
+                # Prefer original lat/lon from data, fall back to geocoded
+                lat = to_none_if_na(row.get("latitude")) if to_none_if_na(row.get("latitude")) != None else to_none_if_na(row.get("closest_latitude"))
+                lon = to_none_if_na(row.get("longitude")) if to_none_if_na(row.get("longitude")) != None else to_none_if_na(row.get("closest_longitude"))
+
                 geoid = row.get("closest_geoid")
                 if geoid is not pd.NA and geoid is not None and geoid != "" and geoid != "00000":
                     stmt1 = select(Place).where(Place.geoid == geoid)
@@ -151,31 +160,36 @@ def transform(
                         session.flush()
 
                     if not address:
-                        # Convert pandas NA to None for database insertion
-                        def to_none_if_na(value):
-                            return None if pd.isna(value) else value
-
                         address = LocationAddress(
+                            etl_run_id=etl_run_id,
+                            lineage_group_id=lineage_group_id,
+                            created_at=now,
+                            updated_at=now,
                             geography_id=geoid,
-                            address_line1=to_none_if_na(row["closest_address_line_1"]),
-                            address_line2=to_none_if_na(row["closest_address_line_2"]),
-                            city=to_none_if_na(row["closest_city"]),
-                            zip=to_none_if_na(row["closest_postal_code"]),
-                            lat=to_none_if_na(row["closest_latitude"]),
-                            lon=to_none_if_na(row["closest_longitude"]),
-                            is_anonymous=False
+                            address_line1=to_none_if_na(row.get("closest_address_line_1")),
+                            address_line2=to_none_if_na(row.get("closest_address_line_2")),
+                            city=to_none_if_na(row.get("closest_city")),
+                            zip=to_none_if_na(row.get("closest_postal_code")),
+                            lat=lat,
+                            lon=lon,
+                            is_anonymous=False,
                         )
                         session.add(address)
                         session.flush()
 
-                    place_to_address_map[geoid] = address.id
+                    place_to_address_map[(lat, lon)] = address.id
 
             session.commit()
-            normalized_df["address_id"] = normalized_df["closest_geoid"].map(
-                place_to_address_map
+            normalized_df["address_id"] = normalized_df.apply(
+                lambda row: place_to_address_map.get((
+                    row.get("latitude") if to_none_if_na(row.get("latitude")) != None else to_none_if_na(row.get("closest_latitude")),
+                    row.get("longitude") if to_none_if_na(row.get("longitude")) != None else to_none_if_na(row.get("closest_longitude"))
+                    )),
+                axis=1
             )
+            
             logger.info(
-                f"Mapped {len(place_to_address_map)} counties to LocationAddresses"
+                f"Mapped {len(place_to_address_map)} points to LocationAddresses"
             )
 
     # 6. Final Column Selection — matches InfrastructureDistrictEnergySystems fields

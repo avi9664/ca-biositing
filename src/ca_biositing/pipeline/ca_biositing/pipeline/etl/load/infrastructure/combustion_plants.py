@@ -3,6 +3,7 @@ import numpy as np
 from datetime import datetime, timezone
 from prefect import task, get_run_logger
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ca_biositing.pipeline.utils.engine import get_engine
 
@@ -46,17 +47,25 @@ def load(df: pd.DataFrame) -> bool:
                     if clean_record.get('created_at') is None:
                         clean_record['created_at'] = now
 
-                    stmt = insert(InfrastructureCombustionPlants).values(clean_record)
-                    update_dict = {
-                        c.name: stmt.excluded[c.name]
-                        for c in InfrastructureCombustionPlants.__table__.columns
-                        if c.name not in ["combustion_fid", 'created_at', 'record_id']
-                    }
-                    upsert_stmt = stmt.on_conflict_do_update(
-                        index_elements=["combustion_fid"],
-                        set_=update_dict,
+                    stmt1 = select(InfrastructureCombustionPlants).where(
+                        InfrastructureCombustionPlants.name == clean_record['name'],
+                        InfrastructureCombustionPlants.address_id == clean_record['address_id']
                     )
-                    session.execute(upsert_stmt)
+                    existing_record = session.execute(stmt1).first()
+
+                    if not existing_record:
+
+                        stmt2 = insert(InfrastructureCombustionPlants).values(clean_record)
+                        update_dict = {
+                            c.name: stmt2.excluded[c.name]
+                            for c in InfrastructureCombustionPlants.__table__.columns
+                            if c.name not in ["combustion_fid", 'created_at', 'record_id']
+                        }
+                        upsert_stmt = stmt2.on_conflict_do_update(
+                            index_elements=["combustion_fid"],
+                            set_=update_dict,
+                        )
+                        session.execute(upsert_stmt)
 
                 session.commit()
 

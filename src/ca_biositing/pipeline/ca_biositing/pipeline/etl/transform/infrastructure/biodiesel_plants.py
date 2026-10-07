@@ -8,7 +8,7 @@ from ca_biositing.pipeline.utils.cleaning_functions import cleaning as cleaning_
 from ca_biositing.pipeline.utils.cleaning_functions import coercion as coercion_mod
 from ca_biositing.pipeline.utils.name_id_swap import normalize_dataframes
 from ca_biositing.pipeline.utils.geo_utils import parse_addresses
-
+from datetime import datetime, timezone
 
 # --- CONFIGURATION ---
 # List the names of the extract modules this transform depends on.
@@ -20,6 +20,9 @@ MERGE_COLUMNS = ["company", "city", "state"]
 
 # don't edit
 geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips"]
+
+def to_none_if_na(value):
+    return None if pd.isna(value) or value == "<na>" else value
 
 @task
 def transform(
@@ -125,18 +128,14 @@ def transform(
     # Bridge County (Place) to LocationAddress
     # We need to find or create a generic LocationAddress for each County
     # ALSO handle cases where geoid is '00000' but we have lat/lon coordinates
-    if 'closest_geoid' in normalized_df.columns:
+    if "closest_geoid" in normalized_df.columns:
         logger.info("Bridging County (Place) to LocationAddress...")
         from sqlmodel import Session, select
         from ca_biositing.pipeline.utils.engine import engine
 
         with Session(engine) as session:
-            # Get unique county_ids (these are geoids from Place table)
+            now = datetime.now(timezone.utc)
             place_to_address_map = {}
-
-            # Convert pandas NA to None for database insertion
-            def to_none_if_na(value):
-                return None if pd.isna(value) else value
 
             for index, row in normalized_df.iterrows():
                 geoid = row["closest_geoid"]
@@ -147,71 +146,54 @@ def transform(
                     place = session.exec(stmt1).first()
 
                     stmt2 = select(LocationAddress).where(
-                        LocationAddress.geography_id == geoid,
+                        LocationAddress.lat == lat and LocationAddress.lon == lon
                     )
                     address = session.exec(stmt2).first()
-
                     if not place:
-                        logger.info(f"Creating new Place for county geoid: {geoid}")
                         place = Place(
                             geoid=geoid,
-                            state_name=row["closest_state_name"],
-                            state_fips=row["closest_state_fips"],
-                            county_name=row["closest_county_name"],
-                            county_fips=row["closest_county_fips"],
+                            state_name=row.get("closest_state_name"),
+                            state_fips=row.get("closest_state_fips"),
+                            county_name=row.get("closest_county_name"),
+                            county_fips=row.get("closest_county_fips"),
                         )
                         session.add(place)
                         session.flush()
-                else:
-                    # No valid geoid, but we have lat/lon
-                    # Check if we already have a LocationAddress with these exact coordinates
-                    if lat_val is not None and lon_val is not None:
-                        stmt2 = select(LocationAddress).where(
-                            LocationAddress.lat == lat_val,
-                            LocationAddress.lon == lon_val,
-                            LocationAddress.geography_id.is_(None)
+
+                    if not address:
+                        # Convert pandas NA to None for database insertion
+
+                        address = LocationAddress(
+                            etl_run_id=etl_run_id,
+                            lineage_group_id=lineage_group_id,
+                            created_at=now,
+                            updated_at=now,
+                            geography_id=geoid,
+                            address_line1=to_none_if_na(row.get("closest_address_line_1")),
+                            address_line2=to_none_if_na(row.get("closest_address_line_2")),
+                            city=to_none_if_na(row.get("closest_city")),
+                            zip=to_none_if_na(row.get("closest_postal_code")),
+                            lat=to_none_if_na(row.get("latitude") if to_none_if_na(row.get("latitude")) != None else to_none_if_na(row.get("closest_latitude"))),
+                            lon=to_none_if_na(row.get("longitude") if to_none_if_na(row.get("longitude")) != None else to_none_if_na(row.get("closest_longitude"))),
+                            is_anonymous=False,
                         )
-                        address = session.exec(stmt2).first()
+                        session.add(address)
+                        session.flush()
 
-                if not address:
-                    # Create new LocationAddress
-                    log_msg = f"Creating new LocationAddress for geoid: {geoid}" if has_valid_geoid else f"Creating new LocationAddress with lat/lon only (row {index})"
-                    logger.info(log_msg)
-
-                    address = LocationAddress(
-                        geography_id=geoid if has_valid_geoid else None,
-                        address_line1=to_none_if_na(row["closest_address_line_1"]),
-                        address_line2=to_none_if_na(row["closest_address_line_2"]),
-                        city=to_none_if_na(row["closest_city"]),
-                        zip=to_none_if_na(row["closest_postal_code"]),
-                        lat=lat_val,
-                        lon=lon_val,
-                        is_anonymous=False
-                    )
-                    session.add(address)
-                    session.flush()
-
-                place_to_address_map[map_key] = address.id
+                    place_to_address_map[(lat, lon)] = address.id
 
             session.commit()
+            normalized_df["address_id"] = normalized_df.apply(
+                lambda row: place_to_address_map.get((
+                    row.get("latitude") if to_none_if_na(row.get("latitude")) != None else to_none_if_na(row.get("closest_latitude")),
+                    row.get("longitude") if to_none_if_na(row.get("longitude")) != None else to_none_if_na(row.get("closest_longitude"))
+                    )),
+                axis=1
+            )
 
-            # Map address_ids back to the dataframe
-            # For rows with valid geoid, map by geoid
-            # For rows without valid geoid, map by index-based key
-            def get_address_id(row_idx, row):
-                geoid = row["closest_geoid"]
-                has_valid_geoid = geoid is not pd.NA and geoid is not None and geoid != "" and geoid != "00000"
-                map_key = geoid if has_valid_geoid else f"latlon_{row_idx}"
-                return place_to_address_map.get(map_key)
-
-            normalized_df['address_id'] = [
-                get_address_id(idx, row)
-                for idx, row in normalized_df.iterrows()
-            ]
-
-            logger.info(f"Created/mapped {len(place_to_address_map)} LocationAddress records")
-            valid_addresses = normalized_df['address_id'].notna().sum()
-            logger.info(f"Successfully assigned address_id to {valid_addresses}/{len(normalized_df)} records")
+            logger.info(
+                f"Mapped {len(place_to_address_map)} points to LocationAddresses"
+            )
 
 
 

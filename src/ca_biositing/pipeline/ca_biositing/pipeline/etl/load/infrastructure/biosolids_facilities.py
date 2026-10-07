@@ -27,6 +27,7 @@ def load(df: pd.DataFrame) -> bool:
 
     try:
         from ca_biositing.datamodels.models import InfrastructureBiosolidsFacilities
+        from sqlmodel import Session, select
 
         now = datetime.now(timezone.utc)
         table_columns = {c.name for c in InfrastructureBiosolidsFacilities.__table__.columns}
@@ -46,17 +47,25 @@ def load(df: pd.DataFrame) -> bool:
                     if clean_record.get('created_at') is None:
                         clean_record['created_at'] = now
 
-                    stmt = insert(InfrastructureBiosolidsFacilities).values(clean_record)
-                    update_dict = {
-                        c.name: stmt.excluded[c.name]
-                        for c in InfrastructureBiosolidsFacilities.__table__.columns
-                        if c.name not in ["biosolid_facility_id", 'created_at', 'record_id']
-                    }
-                    upsert_stmt = stmt.on_conflict_do_update(
-                        index_elements=["biosolid_facility_id"],
-                        set_=update_dict,
+                    stmt1 = select(InfrastructureBiosolidsFacilities).where(
+                        InfrastructureBiosolidsFacilities.facility == clean_record['facility'],
+                        InfrastructureBiosolidsFacilities.address_id == clean_record['address_id']
                     )
-                    session.execute(upsert_stmt)
+                    existing_record = session.execute(stmt1).first()
+
+                    if not existing_record:
+
+                        stmt = insert(InfrastructureBiosolidsFacilities).values(clean_record)
+                        update_dict = {
+                            c.name: stmt.excluded[c.name]
+                            for c in InfrastructureBiosolidsFacilities.__table__.columns
+                            if c.name not in ["biosolid_facility_id", 'created_at', 'record_id']
+                        }
+                        upsert_stmt = stmt.on_conflict_do_update(
+                            index_elements=["biosolid_facility_id"],
+                            set_=update_dict,
+                        )
+                        session.execute(upsert_stmt)
 
                 session.commit()
 
