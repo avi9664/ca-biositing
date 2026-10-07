@@ -359,19 +359,19 @@ def downgrade() -> None:
     # Reverse table creations (drop tables created in upgrade)
     # These must come FIRST before any column operations on dependent tables
     # -------------------------------------------------------------------------
-    
+
     # -- infrastructure_tomato_processors --
     op.drop_table('infrastructure_tomato_processors')
-    
+
     # -- infrastructure_food_manufacturers_carb --
     op.drop_table('infrastructure_food_manufacturers_carb')
-    
+
     # -- infrastructure_food_manufacturers_epa --
     op.drop_table('infrastructure_food_manufacturers_epa')
-    
+
     # -- infrastructure_railways --
     op.drop_table('infrastructure_railways')
-    
+
     # -- infrastructure_crude_oil_pipelines --
     op.drop_table('infrastructure_crude_oil_pipelines')
 
@@ -556,16 +556,16 @@ def downgrade() -> None:
     # -------------------------------------------------------------------------
     # Reverse auto-generated Alembic commands (in reverse order)
     # -------------------------------------------------------------------------
-    
+
     # NOTE: The FK constraints added in upgrade (lines 29-30, 32) appear to not exist
     # in the database, indicating migration 0023 may have failed partway through.
     # Commenting out constraint drops to allow downgrade to proceed.
-    
+
     # -- infrastructure_biodiesel_plants --
     # Restore dropped column (line 31 dropped 'address')
-    op.add_column('infrastructure_biodiesel_plants', 
+    op.add_column('infrastructure_biodiesel_plants',
                   sa.Column('address', sa.VARCHAR(), nullable=True))
-    
+
     # Drop columns added in upgrade (lines 26-28)
     # Note: Skipping FK constraint drops as they don't exist in the database
     op.drop_column('infrastructure_biodiesel_plants', 'lineage_group_id')
