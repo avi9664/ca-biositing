@@ -1,7 +1,35 @@
 # Troubleshooting Guide
 
+**Load when:** a documented command fails or behaves unexpectedly: environment,
+namespace import, Docker, database, Prefect, or Google credential problems.
+
 This document consolidates common issues and solutions from all ca-biositing
 packages and components.
+
+## Common Pitfalls
+
+- **Import Errors**: Ensure you are running inside the Pixi environment
+  (`pixi run ...`) or using the Pixi kernel in Jupyter.
+- **macOS Geospatial Library Conflicts**: On macOS (especially Apple Silicon),
+  you may encounter `PROJ` database version mismatch errors when using
+  `geopandas` or `pyogrio`.
+  - **Fix**: Ensure `PROJ_LIB` environment variable is set to the Pixi
+    environment's data directory _before_ importing geospatial libraries.
+  - **Example**:
+    ```python
+    import os, pyproj
+    os.environ['PROJ_LIB'] = pyproj.datadir.get_data_dir()
+    import geopandas as gpd
+    ```
+- **Docker Hangs & Deadlocks**:
+  - **CRITICAL**: Never import heavy SQLAlchemy models or Pydantic settings at
+    the module level. Always import them inside the `@task` or `@flow` function.
+  - **CRITICAL**: Avoid any network I/O or database connectivity tests at the
+    module level (import time).
+  - **Docker Networking**: Inside containers, use the `db` hostname for
+    PostgreSQL. Outside, use `localhost`.
+- **GCP Auth**: `credentials.json` must be in the root for ETL tasks. See
+  [`docs/pipeline/GCP_SETUP.md`](../../docs/pipeline/GCP_SETUP.md).
 
 ## Environment Issues
 
@@ -42,7 +70,7 @@ Then run `pixi install`.
 ## Namespace Package Issues
 
 For detailed namespace package troubleshooting, see
-[namespace_packages.md](namespace_packages.md).
+[namespace-packages.md](namespace-packages.md).
 
 ### Issue: "ModuleNotFoundError: No module named 'ca_biositing.<package>'"
 
@@ -268,7 +296,7 @@ pixi run restart-services
 
 **Problem:** `MissingContextError: There is no active flow or task run context`
 
-**Solution:** See [testing_patterns.md](testing_patterns.md) for the `.fn()`
+**Solution:** See [testing-patterns.md](testing-patterns.md) for the `.fn()`
 pattern.
 
 Quick fix:
@@ -517,7 +545,7 @@ pixi run service-logs
 ### Getting help
 
 - Check the specific package AGENTS.md for package-specific guidance
-- Check the main [/AGENTS.md](../AGENTS.md) for project-wide guidance
+- Check the main [/AGENTS.md](../../AGENTS.md) for project-wide guidance
 - Search existing issues on GitHub
 - Check Prefect documentation: <https://docs.prefect.io/>
 - Check FastAPI documentation: <https://fastapi.tiangolo.com/>

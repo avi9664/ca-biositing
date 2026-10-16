@@ -1,5 +1,8 @@
 # Code Quality Standards
 
+**Load when:** writing or reviewing Python code (style, type hints, docstrings,
+imports), committing, preparing a PR, or claiming that checks pass.
+
 This document consolidates code quality requirements, pre-commit workflows, and
 style guidelines used across all ca-biositing packages.
 
@@ -304,3 +307,15 @@ async def create_item(item: ItemCreate, session: Session = Depends(get_session))
 3. Local
 
 With blank lines between groups.
+
+## Before Committing or Opening a PR
+
+1. Stage new files first: `pixi run pre-commit-all` checks only tracked files,
+   so run `git add <files>` before relying on it.
+2. While you work, run `pixi run pre-commit` on staged changes. If a hook
+   reports "files were modified by this hook", re-stage and run it again.
+3. Run the tests for every package you changed (see
+   [testing-patterns.md](testing-patterns.md)).
+4. Before opening a PR, run `pixi run pre-commit-all`, confirm every hook shows
+   "Passed" or "Skipped", and then work through
+   [contribution-discipline.md](contribution-discipline.md).
