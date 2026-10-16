@@ -22,7 +22,7 @@ EXTRACT_SOURCES: List[str] = ["food_processing_facilities"]
 MERGE_COLUMNS = ["company", "county", "city", "state", "zip", "address"]
 
 # don't edit
-geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips", "address_id"]
+geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips"]
 
 def to_none_if_na(value):
     return None if pd.isna(value) else value
