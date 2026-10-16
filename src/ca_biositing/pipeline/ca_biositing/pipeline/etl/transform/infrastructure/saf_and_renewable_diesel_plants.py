@@ -113,7 +113,7 @@ def transform(
         from sqlmodel import Session, select
         from ca_biositing.pipeline.utils.engine import engine
         from sqlalchemy import and_
-        
+
 
         with Session(engine) as session:
             place_to_address_map = {}
