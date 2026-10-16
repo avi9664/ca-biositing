@@ -59,10 +59,10 @@ def load(df: pd.DataFrame) -> bool:
                         update_dict = {
                             c.name: stmt.excluded[c.name]
                             for c in InfrastructureFoodManufacturersEPA.__table__.columns
-                            if c.name not in ["manufacturer_id", 'created_at', 'record_id']
+                            if c.name not in ["processing_facility_id", 'created_at', 'record_id']
                         }
                         upsert_stmt = stmt.on_conflict_do_update(
-                            index_elements=["manufacturer_id"],
+                            index_elements=["processing_facility_id"],
                             set_=update_dict,
                         )
                         session.execute(upsert_stmt)

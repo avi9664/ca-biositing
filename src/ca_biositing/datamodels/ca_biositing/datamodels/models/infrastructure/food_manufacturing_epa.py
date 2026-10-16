@@ -7,7 +7,8 @@ from typing import Optional
 class InfrastructureFoodManufacturersEPA(SQLModel, table=True):
     __tablename__ = "infrastructure_food_manufacturers_epa"
 
-    manufacturer_id: Optional[int] = Field(default=None, primary_key=True)
+    processing_facility_id: Optional[int] = Field(default=None, primary_key=True)
+    unique_identifier: Optional[str] = Field(default=None)
     name: Optional[str] = Field(default=None)
     naics_code: Optional[str] = Field(default=None)
     naics_code_description: Optional[str] = Field(default=None)

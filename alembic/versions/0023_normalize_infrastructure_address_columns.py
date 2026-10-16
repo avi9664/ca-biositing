@@ -293,8 +293,9 @@ def upgrade() -> None:
 
     # -- infrastructure_food_manufacturers_epa --
     op.create_table("infrastructure_food_manufacturers_epa",
+        sa.Column('processing_facility_id', sa.Integer(), nullable=True),
         sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column('manufacturer_id', sa.Integer(), nullable=True),
+        sa.Column('unique_identifier', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column('naics_code_description', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column('naics_code', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column('phone', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
@@ -306,7 +307,7 @@ def upgrade() -> None:
         sa.Column('updated_at', sa.DateTime(), nullable=True),
         sa.Column('etl_run_id', sa.Integer(), sa.ForeignKey('etl_run.id'), nullable=True),
         sa.Column('lineage_group_id', sa.Integer(), nullable=True),
-        sa.PrimaryKeyConstraint('manufacturer_id'),)
+        sa.PrimaryKeyConstraint('processing_facility_id'),)
 
     # -- infrastructure_food_manufacturers_carb --
     op.create_table("infrastructure_food_manufacturers_carb",

@@ -26,6 +26,7 @@ AVAILABLE_FLOWS = {
     "prepared_sample": "ca_biositing.pipeline.flows.prepared_sample_etl.prepared_sample_etl_flow",
     "thermochem": "ca_biositing.pipeline.flows.thermochem_etl.thermochem_etl_flow",
     # Infrastructure pipelines
+    "biodiesel_plants": "ca_biositing.pipeline.flows.biodiesel_plants.biodiesel_plants_flow",
     "tomato_processors": "ca_biositing.pipeline.flows.tomato_processors.tomato_processors_flow",
     "food_manufacturers_carb": "ca_biositing.pipeline.flows.food_manufacturers_carb.food_manufacturers_carb_flow",
     "food_manufacturers_epa": "ca_biositing.pipeline.flows.food_manufacturers_epa.food_manufacturers_epa_flow",
