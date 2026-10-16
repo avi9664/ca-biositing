@@ -52,8 +52,8 @@ def load(df: pd.DataFrame) -> bool:
 
                     stmt1 = select(InfrastructureCrudeOilPipelines).where(
                         InfrastructureCrudeOilPipelines.pipeline_name == clean_record['pipeline_name'],
+                        InfrastructureCrudeOilPipelines.operator_name == clean_record['operator_name'],
                         InfrastructureCrudeOilPipelines.master_oid == clean_record['master_oid'],
-                        InfrastructureCrudeOilPipelines.geometry == clean_record['geometry']
                     )
                     existing_record = session.execute(stmt1).first()
 

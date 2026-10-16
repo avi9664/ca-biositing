@@ -9,7 +9,6 @@ AVAILABLE_FLOWS = {
     # "geography": "ca_biositing.pipeline.flows.geography.geography_etl_flow",
     # "primary_ag_product": "ca_biositing.pipeline.flows.primary_ag_product.primary_ag_product_flow",
     # "analysis_type": "ca_biositing.pipeline.flows.analysis_type.analysis_type_flow",
-    "biodiesel_plants": "ca_biositing.pipeline.flows.biodiesel_plants.biodiesel_plants_flow",
     # "residue_factors": "ca_biositing.pipeline.flows.residue_factors_flow.residue_factors_etl_flow",
     # "resource_information": "ca_biositing.pipeline.flows.resource_information.resource_information_flow",
     # "county_ag_report": "ca_biositing.pipeline.flows.county_ag_report_etl.county_ag_report_flow",
@@ -26,6 +25,7 @@ AVAILABLE_FLOWS = {
     # "prepared_sample": "ca_biositing.pipeline.flows.prepared_sample_etl.prepared_sample_etl_flow",
     # "thermochem": "ca_biositing.pipeline.flows.thermochem_etl.thermochem_etl_flow",
     # Infrastructure pipelines
+    "biodiesel_plants": "ca_biositing.pipeline.flows.biodiesel_plants.biodiesel_plants_flow",
     "tomato_processors": "ca_biositing.pipeline.flows.tomato_processors.tomato_processors_flow",
     "food_manufacturers_carb": "ca_biositing.pipeline.flows.food_manufacturers_carb.food_manufacturers_carb_flow",
     "food_manufacturers_epa": "ca_biositing.pipeline.flows.food_manufacturers_epa.food_manufacturers_epa_flow",

@@ -21,7 +21,7 @@ EXTRACT_SOURCES: List[str] = ["district_energy_systems"]
 MERGE_COLUMNS = ["name", "state", "city"]
 
 # don't edit
-geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips","address_id"]
+geocoded_columns = ["geocoded_status", "closest_address_line_1", "closest_address_line_2", "closest_city", "closest_county", "closest_state", "closest_postal_code", "closest_latitude", "closest_longitude", "closest_geoid", "closest_state_name", "closest_state_fips", "closest_county_name", "closest_county_fips"]
 
 def to_none_if_na(value):
     return None if pd.isna(value) else value
@@ -128,6 +128,7 @@ def transform(
         logger.info("Bridging County (Place) to LocationAddress...")
         from sqlmodel import Session, select
         from ca_biositing.pipeline.utils.engine import engine
+        from sqlalchemy import and_
 
         with Session(engine) as session:
             place_to_address_map = {}
@@ -144,7 +145,7 @@ def transform(
                     place = session.exec(stmt1).first()
 
                     stmt2 = select(LocationAddress).where(
-                        LocationAddress.geography_id == geoid
+                        and_(LocationAddress.lat == lat, LocationAddress.lon == lon)
                     )
                     address = session.exec(stmt2).first()
 

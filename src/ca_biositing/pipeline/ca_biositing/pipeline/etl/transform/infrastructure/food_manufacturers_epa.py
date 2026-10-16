@@ -114,7 +114,6 @@ def transform(
     rename_columns = {
         "excess_food_estimate_high_tons_per_year_": "excess_food_estimate_high_tons_per_year",
         "excess_food_estimate_low_tons_per_year_": "excess_food_estimate_low_tons_per_year",
-        "unique_identifier": "manufacturer_id"
     }
     normalized_df = normalized_df.rename(columns=rename_columns)
 
@@ -123,6 +122,7 @@ def transform(
         logger.info("Bridging County (Place) to LocationAddress...")
         from sqlmodel import Session, select
         from ca_biositing.pipeline.utils.engine import engine
+        from sqlalchemy import and_
 
         with Session(engine) as session:
             place_to_address_map = {}
@@ -139,7 +139,7 @@ def transform(
                     place = session.exec(stmt1).first()
 
                     stmt2 = select(LocationAddress).where(
-                        LocationAddress.geography_id == geoid
+                        and_(LocationAddress.lat == lat, LocationAddress.lon == lon)
                     )
                     address = session.exec(stmt2).first()
 
@@ -204,7 +204,7 @@ def transform(
                 "website",
                 "excess_food_estimate_low_tons_per_year",
                 "excess_food_estimate_high_tons_per_year",
-                "manufacturer_id",
+                "unique_identifier",
                 'etl_run_id',
                 'lineage_group_id',
             ]
