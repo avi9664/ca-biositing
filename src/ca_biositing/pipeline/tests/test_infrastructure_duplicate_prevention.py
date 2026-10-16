@@ -58,7 +58,7 @@ LOAD_MODULE_PATH = "ca_biositing.pipeline.etl.load.infrastructure.{name}"
 def get_mock_data_for_dataset(dataset_name: str) -> pd.DataFrame:
     """
     Generate mock data for a specific infrastructure dataset.
-    
+
     This function creates minimal valid data that matches the expected schema
     for each infrastructure type. The data is designed to test duplicate
     prevention without requiring extensive field coverage.
@@ -72,7 +72,7 @@ def get_mock_data_for_dataset(dataset_name: str) -> pd.DataFrame:
         "latitude": 37.7749,
         "longitude": -122.4194,
     }
-    
+
     # Dataset-specific fields that are commonly used for duplicate detection
     dataset_specific = {
         "petroleum_pipelines": {"name": "Test Pipeline 1", "status": "Operational"},
@@ -94,7 +94,7 @@ def get_mock_data_for_dataset(dataset_name: str) -> pd.DataFrame:
         "food_manufacturers_epa": {"facility_name": "Test EPA Food Manufacturer", "sic_code": "2000"},
         "food_manufacturers_carb": {"facility_name": "Test CARB Food Manufacturer", "facility_id": "CARB-001"},
     }
-    
+
     data = {**base_data, **dataset_specific.get(dataset_name, {})}
     return pd.DataFrame([data])
 
@@ -121,7 +121,7 @@ def get_model_class_for_dataset(dataset_name: str):
         InfrastructureTomatoProcessors,
         InfrastructureWastewaterTreatmentPlants,
     )
-    
+
     model_map = {
         "petroleum_pipelines": InfrastructurePetroleumPipelines,
         "biosolids_facilities": InfrastructureBiosolidsFacilities,
@@ -142,7 +142,7 @@ def get_model_class_for_dataset(dataset_name: str):
         "food_manufacturers_epa": InfrastructureFoodManufacturersEPA,
         "food_manufacturers_carb": InfrastructureFoodManufacturersCARB,
     }
-    
+
     return model_map.get(dataset_name)
 
 
@@ -154,37 +154,37 @@ def get_model_class_for_dataset(dataset_name: str):
 def test_load_prevents_duplicates_on_rerun(dataset_name, session, engine):
     """
     Test that running load() twice with the same data does NOT create duplicates.
-    
+
     This is the CRITICAL test for duplicate prevention. It verifies that:
     1. The first load creates a new record
     2. The second load with identical data updates the existing record
     3. Only ONE record exists in the database after both loads
     4. The record's updated_at timestamp changes (proving it was updated)
-    
+
     This test simulates the real-world scenario where an ETL pipeline might
     run multiple times with overlapping data.
     """
     import importlib
-    
+
     # Import the load module
     load_module = importlib.import_module(LOAD_MODULE_PATH.format(name=dataset_name))
     load_fn = load_module.load.fn  # Unwrap Prefect task
-    
+
     # Get the model class
     model_class = get_model_class_for_dataset(dataset_name)
     if model_class is None:
         pytest.skip(f"Model class not found for {dataset_name}")
-    
+
     # Generate mock data
     mock_data = get_mock_data_for_dataset(dataset_name)
-    
+
     # Mock get_engine to return our test engine
     with patch("ca_biositing.pipeline.utils.engine.get_engine", return_value=engine):
         # First load - should create a new record
         first_timestamp = datetime.now(timezone.utc)
         result1 = load_fn(mock_data.copy())
         assert result1 is True, f"First load failed for {dataset_name}"
-        
+
         # Check record count after first load
         with Session(engine) as check_session:
             count1 = check_session.exec(
@@ -193,20 +193,20 @@ def test_load_prevents_duplicates_on_rerun(dataset_name, session, engine):
             assert count1 == 1, (
                 f"Expected 1 record after first load for {dataset_name}, got {count1}"
             )
-            
+
             # Get the record and its updated_at timestamp
             record1 = check_session.exec(select(model_class)).first()
             assert record1 is not None
             first_updated_at = record1.updated_at
-        
+
         # Small delay to ensure timestamp difference
         import time
         time.sleep(0.01)
-        
+
         # Second load - should update the existing record, NOT create a duplicate
         result2 = load_fn(mock_data.copy())
         assert result2 is True, f"Second load failed for {dataset_name}"
-        
+
         # Verify no duplicates were created
         with Session(engine) as check_session:
             count2 = check_session.exec(
@@ -216,12 +216,12 @@ def test_load_prevents_duplicates_on_rerun(dataset_name, session, engine):
                 f"DUPLICATE DETECTED: Expected 1 record after second load for {dataset_name}, "
                 f"got {count2}. This indicates the upsert logic is not working correctly!"
             )
-            
+
             # Verify the record was updated (not just left alone)
             record2 = check_session.exec(select(model_class)).first()
             assert record2 is not None
             second_updated_at = record2.updated_at
-            
+
             # The updated_at timestamp should have changed
             # (Some implementations might not update if data is identical,
             # but the important thing is NO DUPLICATE was created)
@@ -234,26 +234,26 @@ def test_load_prevents_duplicates_on_rerun(dataset_name, session, engine):
 def test_load_with_multiple_unique_records(dataset_name, session, engine):
     """
     Test that load() can handle multiple different records correctly.
-    
+
     This test verifies that:
     1. Multiple DIFFERENT records are all inserted
     2. Re-loading the same records doesn't create duplicates
     3. The total count matches expectations (3 unique records)
     """
     import importlib
-    
+
     # Import the load module
     load_module = importlib.import_module(LOAD_MODULE_PATH.format(name=dataset_name))
     load_fn = load_module.load.fn
-    
+
     # Get the model class
     model_class = get_model_class_for_dataset(dataset_name)
     if model_class is None:
         pytest.skip(f"Model class not found for {dataset_name}")
-    
+
     # Generate three different records
     mock_data = get_mock_data_for_dataset(dataset_name)
-    
+
     # Create variations by modifying key fields
     records = []
     for i in range(3):
@@ -264,15 +264,15 @@ def test_load_with_multiple_unique_records(dataset_name, session, engine):
                 if record[col].dtype == 'object':
                     record.loc[0, col] = f"{record.loc[0, col]}_{i}"
         records.append(record)
-    
+
     combined_data = pd.concat(records, ignore_index=True)
-    
+
     # Mock get_engine
     with patch("ca_biositing.pipeline.utils.engine.get_engine", return_value=engine):
         # First load - should create 3 records
         result1 = load_fn(combined_data.copy())
         assert result1 is True, f"First load failed for {dataset_name}"
-        
+
         with Session(engine) as check_session:
             count1 = check_session.exec(
                 select(func.count()).select_from(model_class)
@@ -280,11 +280,11 @@ def test_load_with_multiple_unique_records(dataset_name, session, engine):
             assert count1 == 3, (
                 f"Expected 3 records after first load for {dataset_name}, got {count1}"
             )
-        
+
         # Second load with same data - should still be 3 records (no duplicates)
         result2 = load_fn(combined_data.copy())
         assert result2 is True, f"Second load failed for {dataset_name}"
-        
+
         with Session(engine) as check_session:
             count2 = check_session.exec(
                 select(func.count()).select_from(model_class)
@@ -299,33 +299,33 @@ def test_load_with_multiple_unique_records(dataset_name, session, engine):
 def test_load_handles_null_values_without_duplicates(dataset_name, session, engine):
     """
     Test that load() handles records with NULL values correctly.
-    
+
     Some duplicate detection logic might fail when comparing NULL values.
     This test ensures NULL handling doesn't cause duplicates.
     """
     import importlib
-    
+
     load_module = importlib.import_module(LOAD_MODULE_PATH.format(name=dataset_name))
     load_fn = load_module.load.fn
-    
+
     model_class = get_model_class_for_dataset(dataset_name)
     if model_class is None:
         pytest.skip(f"Model class not found for {dataset_name}")
-    
+
     # Generate data with some NULL values
     mock_data = get_mock_data_for_dataset(dataset_name)
     # Set latitude/longitude to None to test NULL handling
     mock_data.loc[0, "latitude"] = None
     mock_data.loc[0, "longitude"] = None
-    
+
     with patch("ca_biositing.pipeline.utils.engine.get_engine", return_value=engine):
         # Load twice
         result1 = load_fn(mock_data.copy())
         assert result1 is True
-        
+
         result2 = load_fn(mock_data.copy())
         assert result2 is True
-        
+
         # Verify no duplicates
         with Session(engine) as check_session:
             count = check_session.exec(
@@ -335,6 +335,3 @@ def test_load_handles_null_values_without_duplicates(dataset_name, session, engi
                 f"NULL value handling created duplicates for {dataset_name}: "
                 f"expected 1 record, got {count}"
             )
-
-
-
